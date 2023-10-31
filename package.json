@@ -1,0 +1,17 @@
+{
+  "name": "node_checkers",
+  "version": "1.0.0",
+  "description": "Web server for ws_checkers",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^4.18.2",
+    "knex": "^3.0.1",
+    "tsc": "^2.0.4",
+    "typescript": "^5.2.2"
+  }
+}
