@@ -1,28 +1,19 @@
-import express from 'express'
-import morgan from 'morgan'
-import knex from 'knex'
+import express from 'express';
+import morgan from 'morgan';
+import connect from './connect.js';
+import 'dotenv/config'
 
-const app = express()
+const app = express();
 
-app.use(morgan('dev'))
-app.use('/static', express.static('static'))
-
-// TODO knexfile, env etc.
-// TODO typescript...
+app.use(morgan('dev'));
+app.use('/static', express.static('static'));
 
 app.get('/', async (req, res) => {
-    // TODO FIX 'Unable to acquire a connection'
-    const pg = knex({
-        client: 'pg',
-        host: 'host.docker.internal',
-        port: '5432',
-        database: 'checkers_db',
-        password: 'root',
-    });
-    await pg('user').select('*');
-})
+    const knex = connect();
+    res.json(await knex('user').select('*'));
+});
 
-const port = 80
+const port = process.env.WEB_PORT || 80;
 app.listen(port, () => {
-    console.log(`Listening on ${port}`)
-})
+    console.log(`Listening on port ${port}`);
+});
