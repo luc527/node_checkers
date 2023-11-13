@@ -11,12 +11,10 @@ EXCEPTION
     WHEN duplicate_object THEN null;
 END $$;
 
-create table if not exists "user" (
+create table if not exists player (
   id            serial,
   name          text not null unique,
   password_hash text not null,
-
-  avatar_path text null,
   
   created_at timestamp not null default current_timestamp,
   updated_at timestamp not null default current_timestamp,
@@ -25,37 +23,37 @@ create table if not exists "user" (
 );
 
 create table if not exists friend_request (
-  from_id    bigint references "user" (id),
-  to_id      bigint references "user" (id),
+  from_id    bigint references player (id),
+  to_id      bigint references player (id),
   created_at timestamp not null default current_timestamp,
 
   primary key (from_id, to_id)
 );
 
 create table if not exists friends_with (
-  user1_id   bigint references "user" (id),
-  user2_id   bigint references "user" (id),
+  player1_id   bigint references player (id),
+  player2_id   bigint references player (id),
   created_at timestamp not null default current_timestamp,
 
-  primary key (user1_id, user2_id)
+  primary key (player1_id, player2_id)
 );
 
 create table if not exists machine_game (
-  user_id   bigint references "user" (id),
+  player_id   bigint references player (id),
   game_uuid uuid,
 
-  user_color color,
+  player_color color,
 
   started_at timestamp not null default current_timestamp,
   ended_at   timestamp null,
   end_result end_result,
 
-  primary key (user_id, game_uuid)
+  primary key (player_id, game_uuid)
 );
 
 create table if not exists human_game (
-  white_id  bigint references "user" (id),
-  black_id  bigint references "user" (id),
+  white_id  bigint references player (id),
+  black_id  bigint references player (id),
   game_uuid uuid,
 
   started_at timestamp not null default current_timestamp,

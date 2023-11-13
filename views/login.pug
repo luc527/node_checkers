@@ -1,0 +1,21 @@
+extends layout.pug
+
+block main
+  div(style={width: '70%'}).card.m-auto.mt-3
+    form(name='login')
+      div.card-body.d-flex.flex-column.gap-3
+        h1.fw-bold.text-center Checkers 
+          small | Login
+        div
+          label(for='username') Username 
+          input(type='text', name='username', required).form-control
+        div
+          label(for='password') Password
+          input(type='password', name='password', required).form-control
+        div.d-flex.flex-row.align-items-center
+          span
+            | Don't have an account? 
+            a(href='/signup') Sign up
+            | .
+          button(type='submit').ms-auto.btn.btn-primary Login
+  script(src='static/js/login.js') 
