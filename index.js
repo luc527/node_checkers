@@ -87,8 +87,8 @@ app.get('/', (req, res) => {
 app.get('/users', async (req, res) => {
     const perPage = 20;
 
-    const search = req.query.search;
-    const page   = req.query.page ?? 1;
+    const search = req.query.search || '';
+    const page   = req.query.page   || 1;
     const offset = (page - 1) * perPage;
 
     let users = [];
@@ -102,14 +102,17 @@ app.get('/users', async (req, res) => {
 
     // TODO url encode search?
 
-    res.render('user-search', {
+    const options = {
         title: 'Search users',
         users,
         errorMessage,
         search,
+        page,
         showPrev: users && page > 1,
         showNext: users && users.length == perPage,
-    });
+    };
+    console.log({options});
+    res.render('user-search', options);
 });
 
 //
