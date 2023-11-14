@@ -1,0 +1,19 @@
+extends layout.pug
+
+block layoutNav
+  nav.navbar.bg-dark.navbar-expand-lg.bg-body-tertiary(data-bs-theme="dark")
+    div.container-xxl
+      a(href="/").navbar-brand Checkers
+      button.navbar-toggler(
+        type="button",
+        data-bs-toggle="collapse",
+        data-bs-target="navbarNav",
+      )
+      div#navbarNav.collapse.navbar-collapse
+        ul.navbar-nav
+          // li.nav-item > a.nav-link
+
+block layoutBody
+  div.card.mt-3
+    div.card-body
+      block pageBody

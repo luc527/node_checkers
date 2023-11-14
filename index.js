@@ -5,7 +5,7 @@ import cookieParser from 'cookie-parser';
 
 import 'dotenv/config'
 
-import Users from './users.js';
+import * as usr from './users.js';
 import * as jwt from './jwt.js'
 
 const app = express();
@@ -23,8 +23,8 @@ app.use(async (req, res, next) => {
     const token = req.cookies.token;
     if (typeof token === 'string') {
         try {
-            const {user} = await jwt.verify(token, process.env.JWT_SECRET);
-            req.user = user;
+            const {id} = await jwt.verify(token, process.env.JWT_SECRET);
+            req.user = id;
         } catch (ignored) {}
     }
     next();
@@ -40,7 +40,7 @@ app.get('/signup', (req, res) => {
 
 app.post('/signup', async (req, res) => {
     const {username, password} = req.body;
-    const {ok, error} = await Users.signUp(username, password);
+    const {ok, error} = await usr.signUp(username, password);
     if (ok) {
         res.status(200).end();
     } else {
@@ -58,12 +58,11 @@ app.get('/login', (req, res) => {
 
 app.post('/login', async (req, res) => {
     const {username, password} = req.body;
-    const {ok, error, user} = await Users.login(username, password);
+    const {ok, error, user} = await usr.login(username, password);
     if (!ok) {
         res.status(400).json({message: error});
     } else {
-        delete user.password_hash;
-        const token = await jwt.sign({user}, process.env.JWT_SECRET);
+        const token = await jwt.sign({id: user.id}, process.env.JWT_SECRET);
         res.cookie('token', token);
         res.status(200).end();
     }
@@ -81,9 +80,36 @@ app.use((req, res, next) => {
     }
 });
 
-app.get('/me', (req, res) => {
-    console.log('me');
-    res.json(req.user);
+app.get('/', (req, res) => {
+    res.render('index', {title: 'Home'});
+});
+
+app.get('/users', async (req, res) => {
+    const perPage = 20;
+
+    const search = req.query.search;
+    const page   = req.query.page ?? 1;
+    const offset = (page - 1) * perPage;
+
+    let users = [];
+    let errorMessage = '';
+
+    try {
+        users = await usr.search(search, perPage, offset);
+    } catch (error) {
+        errorMessage = error;
+    }
+
+    // TODO url encode search?
+
+    res.render('user-search', {
+        title: 'Search users',
+        users,
+        errorMessage,
+        search,
+        showPrev: users && page > 1,
+        showNext: users && users.length == perPage,
+    });
 });
 
 //

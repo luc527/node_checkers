@@ -1,0 +1,39 @@
+extends page.pug
+
+block pageBody
+  form(name="searchForm")
+    div.d-flex.flex-row.gap-3
+      input(name="search", type="text", value=search).form-control
+      button(type="submit").btn.btn-primary.d-flex.flex-row.gap-2
+        i.bi.bi-search
+        | Search
+  if errorMessage
+    div.alert.alert-danger.mt-3.mb-0
+      b Search failed 
+      | #{errorMessage}
+  else
+    table.mb-0.table.table-striped.table-hover
+      thead
+        tr
+          th(style={width: '0.1%'}) ID
+          th Name
+      tbody
+        if !users
+          tr
+            td.text-center.p-3(colspan=2) No users found
+        else
+          each user in users
+            tr
+              td= user.id
+              td= user.name
+
+    if showPrev || showNext
+      div.mt-3.d-flex.flex-row
+        if showPrev
+          a.btn.btn-light(href=`/users?search=${search}&page=${page - 1}`)
+            i.bi.bi-arrow-primary 
+            | Previous page
+        if showNext
+          a.ms-auto.btn.btn-light(href=`/users?search=${search}&page=${page + 1}`)
+            | Next page 
+            i.bi.bi-arrow-right
