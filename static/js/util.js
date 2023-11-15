@@ -1,23 +1,13 @@
-const _successToastKey = 'checkers-success-toast';
-const _accessTokenKey = 'checkers-access-token';
-
-const _successToast = sessionStorage.getItem(_successToastKey);
-if (_successToast) {
-    Toast.fire({
-        icon: 'success',
-        text: _successToast,
-    });
-    sessionStorage.removeItem(_successToastKey);
-}
-
-function scheduleSuccessToast(text) {
-    sessionStorage.setItem(_successToastKey, text);
-}
-
-
 function errorToast(text) {
     Toast.fire({
         icon: 'error',
+        text,
+    });
+}
+
+function successToast(text) {
+    Toast.fire({
+        icon: 'success',
         text,
     });
 }
@@ -45,7 +35,10 @@ async function request(method, url, reqBody) {
         } catch (error) {
             console.error(`request('${method}', '${url}'): failed to parse JSON: ${resText}`);
             errorToast('An unexpected error occurred.');
-            return false;
+            return {
+                ok: false,
+                body: null,
+            };
         }
     }
 

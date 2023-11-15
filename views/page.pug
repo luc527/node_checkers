@@ -10,8 +10,18 @@ block layoutNav
         data-bs-target="navbarNav",
       )
       div#navbarNav.collapse.navbar-collapse
-        ul.navbar-nav
-          // li.nav-item > a.nav-link
+        ul.navbar-nav(style={width: '100%'})
+          li.nav-item.dropdown
+            a.nav-link.dropdown-toggle(href="#", data-bs-toggle="dropdown") Community
+            ul.dropdown-menu
+              li
+                a.dropdown-item(href="/users") Users
+              li
+                a.dropdown-item(href="/friendRequests") Friend requests
+              li
+                a.dropdown-item(href="/friends") Friends
+          li.nav-item.ms-auto
+            a.nav-link(href="/exit") Exit
 
 block layoutBody
   div.card.mt-3

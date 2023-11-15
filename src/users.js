@@ -44,14 +44,23 @@ export async function login(username, password) {
     };
 }
 
-export async function search(search='', limit=20, offset=0) {
+export async function search(loggedUser, search, limit, offset=0) {
     const knex = connect();
 
-    const query = knex('player')
-        .select('id', 'name', 'created_at', 'updated_at')
+    const query = knex({p: 'player'})
+        .leftJoin({r1: 'friend_request'}, function() { this.on('r1.from_id', loggedUser).andOn('r1.to_id', 'p.id') })
+        .leftJoin({r2: 'friend_request'}, function() { this.on('r2.from_id', 'p.id').andOn('r1.to_id', loggedUser)})
+        .select(
+            'p.id',
+            'p.name',
+            'p.created_at',
+            'p.updated_at',
+            'r1.created_at as request_sent_at',
+            'r2.created_at as request_received_at',
+        )
         .limit(limit)
         .offset(offset)
-        .orderBy('name');
+        .orderBy('p.name');
 
     if (search) {
         query.whereLike('name', `%${search}%`);

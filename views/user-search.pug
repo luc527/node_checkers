@@ -1,5 +1,7 @@
 extends page.pug
 
+include mixins/pagination.pug
+
 block pageBody
   form(name="searchForm")
     div.d-flex.flex-row.gap-3
@@ -17,6 +19,7 @@ block pageBody
         tr
           th(style={width: '0.1%'}) ID
           th Name
+          th(style={width: '0.1%'})
       tbody
         if !users
           tr
@@ -26,14 +29,21 @@ block pageBody
             tr
               td= user.id
               td= user.name
+              td
+                -
+                  let disabled = false;
+                  let title = 'Send friendship request';
+                  if (user.id == loggedUser) {
+                    disabled = true;
+                    title = 'This is you';
+                  } else if (user.request_sent_at || user.request_received_at) {
+                    disabled = true;
+                    title = 'Already sent request';
+                  }
+                div(data-bs-toggle="tooltip", data-bs-title=title)
+                  button(disabled=disabled, data-id=user.id).btn-send-request.btn.btn-success
+                    i.bi.bi-person-plus-fill
 
-    if showPrev || showNext
-      div.mt-3.d-flex.flex-row
-        if showPrev
-          a.btn.btn-light(href=`/users?search=${search}&page=${Number(page) - 1}`)
-            i.bi.bi-arrow-left 
-            | Previous page
-        if showNext
-          a.ms-auto.btn.btn-light(href=`/users?search=${search}&page=${Number(page) + 1}`)
-            | Next page 
-            i.bi.bi-arrow-right
+    +pagination('/users', [`search=${search}`], page, showPrev, showNext)
+
+  script(src="/static/js/views/user-search.js")

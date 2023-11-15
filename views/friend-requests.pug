@@ -1,0 +1,78 @@
+extends page.pug
+
+block pageBody
+  if errorMessage
+    div.alert.alert-danger
+      b Search failed 
+      | #{errorMessage}
+  else
+    ul.nav.nav-underline
+      li.nav-item
+        button(class=`nav-link ${tab == 'received' ? 'active' : ''}`, type="button", data-bs-toggle="tab", data-bs-target="#received-tab")
+          | Received
+      li.nav-item
+        button(class=`nav-link ${tab == 'sent' ? 'active' : ''}` type="button", data-bs-toggle="tab", data-bs-target="#sent-tab")
+          | Sent
+    div.tab-content.mt-3
+      div#received-tab(class=`tab-pane ${tab == 'received' ? 'show active' : ''}`)
+        table.table.table-striped.table-hover
+          thead
+            th(width='0.1%') ID
+            th Name
+            th Time
+            th(width='0.1%')
+          tbody
+            if friendRequestsReceived.length == 0
+              tr
+                td.p-3.text-center(colspan=4) You haven't received any friend requests
+            else
+              each request in friendRequestsReceived
+                tr
+                  td= request.from_id
+                  td= request.from_name
+                  td= new Date(request.created_at).toLocaleString('pt-BR')
+                  td
+                    div.d-flex.flex-row.gap-2
+                      button.btn.btn-success.btn-accept(
+                        data-bs-toggle="tooltip",
+                        data-bs-title="Accept",
+                        data-bs-placement="left",
+                        data-from-id=request.from_id,
+                        data-to-id=request.to_id,
+                      )
+                        i.bi.bi-person-plus-fill
+                      button.btn.btn-danger.btn-reject(
+                        data-bs-toggle="tooltip",
+                        data-bs-title="Reject",
+                        data-bs-placement="right",
+                        data-from-id=request.from_id,
+                        data-to-id=request.to_id,
+                      )
+                        i.bi.bi-person-x-fill
+      div#sent-tab(class=`tab-pane ${tab == 'sent' ? 'show active' : ''}`)
+        table.table.table-striped.table-hover
+          thead
+            th(width='0.1%') ID
+            th Name
+            th Time
+            th(width='0.1%')
+          tbody
+            if friendRequestsSent.length == 0
+              tr
+                td.p-3.text-center(colspan=4) You haven't sent any friend requests
+            else
+              each request in friendRequestsSent
+                tr
+                  td= request.to_id
+                  td= request.to_name
+                  td= new Date(request.created_at).toLocaleString('pt-BR')
+                  td
+                    button.btn.btn-secondary.btn-cancel(
+                      data-bs-toggle="tooltip",
+                      data-bs-title="Cancel",
+                      data-bs-placement="right",
+                      data-from-id=request.from_id
+                      data-to-id=request.to_id
+                    )
+                      i.bi.bi-trash-fill
+  script(src="/static/js/views/friend-requests.js")

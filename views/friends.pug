@@ -1,0 +1,38 @@
+extends page.pug
+
+include mixins/pagination.pug
+
+block pageBody
+  if errorMessage
+    div.alert.alert-danger.mt-3
+      strong Search failed
+      | #{errorMessage}
+  else
+    table.table.table-striped.table-hover
+      thead
+        tr
+          th(width='0.1%') ID
+          th Name
+          th(width='0.1%')
+      tbody
+        if friends.length == 0
+          tr
+            td.p-3.text-center(colspan=3) You have no friends
+        else
+          each friend in friends
+            tr
+              td= friend.id
+              td= friend.name
+              td
+                button.btn.btn-danger.btn-unfriend(
+                  data-id=friend.id,
+                  data-bs-toggle="tooltip",
+                  data-bs-title="Unfriend",
+                  data-bs-placement="right"
+                )
+                  i.bi.bi-person-x-fill
+
+    +pagination('/friends', [], page, showPrev, showNext)
+
+  script(src="/static/js/views/friends.js")
+

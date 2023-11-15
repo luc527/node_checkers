@@ -8,3 +8,8 @@ body {
 :root {
     --bs-font-sans-serif: 'Fira Sans', system-ui, sans-serif;
 }
+
+.alert,
+.table {
+    margin-bottom: 0;
+}
