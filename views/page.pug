@@ -4,11 +4,8 @@ block layoutNav
   nav.navbar.bg-dark.navbar-expand-lg.bg-body-tertiary(data-bs-theme="dark")
     div.container-xxl
       a(href="/").navbar-brand Checkers
-      button.navbar-toggler(
-        type="button",
-        data-bs-toggle="collapse",
-        data-bs-target="navbarNav",
-      )
+      button.navbar-toggler(type="button", data-bs-toggle="collapse", data-bs-target="#navbarNav")
+        span.navbar-toggler-icon
       div#navbarNav.collapse.navbar-collapse
         ul.navbar-nav(style={width: '100%'})
           li.nav-item.dropdown
@@ -27,3 +24,16 @@ block layoutBody
   div.card.mt-3
     div.card-body
       block pageBody
+
+  div.notifications-window
+    div.notifications-header
+      span Notifications
+      span.ms-auto
+        button.notifications-toggle-button.btn.btn-light.btn-sm
+          i.bi.bi-arrow-bar-up
+    div.notifications-body
+      div.notifications-container
+        | Hello world
+
+block layoutScripts
+  script(src="/static/js/notifications.js")

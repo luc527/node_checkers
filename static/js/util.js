@@ -47,3 +47,10 @@ async function request(method, url, reqBody) {
         body: resBody,
     };
 }
+
+function makeNotificationElement(notification) {
+    const elem = document.createElement('div');
+    elem.innerHTML = notification;
+    // TODO
+    return elem;
+}

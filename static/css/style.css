@@ -13,3 +13,43 @@ body {
 .table {
     margin-bottom: 0;
 }
+
+.notifications-window {
+    position: fixed;
+    bottom: 0;
+    right: 5vw;
+
+    width: 30vw;
+    min-width: 20rem;
+
+    background-color: white;
+    border: 1px var(--bs-border-color) solid;
+    border-top-right-radius: var(--bs-border-radius);
+    border-top-left-radius: var(--bs-border-radius);
+}
+
+.notifications-header {
+    padding-top: .25rem;
+    padding-bottom: .25rem;
+    padding-right: .25rem;
+    padding-left: .5rem;
+
+    display: flex;
+    align-items: center;
+    flex-direction: row;
+}
+
+.notifications-body {
+    border-top: 1px var(--bs-border-color) solid ;
+    height: 0;
+    max-height: 60vh;
+    overflow-y: scroll;
+    transition: height 500ms ease-in-out;
+}
+
+.notifications-container {
+    padding: .5rem;
+    padding-top: .25rem;
+    display: flex;
+    flex-direction: column;
+}

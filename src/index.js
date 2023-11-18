@@ -7,7 +7,10 @@ import 'dotenv/config'
 
 import * as Users from './users.js';
 import * as Friends from './friends.js';
+import NotificationQueues from './notificationQueues.js';
 import * as jwt from './jwt.js'
+
+const notificationQueues = new NotificationQueues();
 
 const app = express();
 
@@ -155,6 +158,10 @@ app.post('/friendRequests', async (req, res) => {
 
     try {
         await Friends.sendRequest(from, to);
+        notificationQueues.enqueue(to, {
+            type: 'friendRequestReceived',
+            from,
+        });
         res.status(200).end();
     } catch (error) {
         res.status(400).json({message: error.toString()});
@@ -170,9 +177,23 @@ app.delete('/friendRequests', async (req, res) => {
     const rejecting  = req.user == to && req.query.action == 'reject';
 
     try {
-        if      (cancelling) await Friends.cancelRequest(from, to);
-        else if (accepting)  await Friends.acceptRequest(from, to);
-        else if (rejecting)  await Friends.rejectRequest(from, to);
+        if (cancelling) {
+            await Friends.cancelRequest(from, to);
+        }
+        else if (accepting) {
+            await Friends.acceptRequest(from, to);
+            notificationQueues.enqueue(from, {
+                type: 'friendRequestAccepted',
+                to,
+            });
+        }
+        else if (rejecting) {
+            await Friends.rejectRequest(from, to);
+            notificationQueues.enqueue(from, {
+                type: 'friendRequestRejected',
+                to,
+            });
+        }
         else {
             res.status(400).json({message: 'Invalid action'});
         }
@@ -217,6 +238,11 @@ app.delete('/friends', async (req, res) => {
     } catch (error) {
         res.status(400).json({message: error.toString()});
     }
+});
+
+app.get('/notifications', (req, res) => {
+    res.header('Cache-Control', 'no-cache');
+    res.status(200).json(notificationQueues.consume(req.user));
 });
 
 //
