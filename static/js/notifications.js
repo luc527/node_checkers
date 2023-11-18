@@ -5,44 +5,119 @@
 // election algorithm to decide which tab should create the EventSource.
 // Which requires using navigator.locks. Which, again, requires HTTPS.
 
+const _notificationsKey = 'notifications';
+const _notificationPollTime = 5 * 1000;
+
+let _notificationPollingEnabled = null;
+let _notificationPollInterval = null;
+
 let gNotificationsWindow = null;
 
 document.addEventListener('DOMContentLoaded', () => {
     gNotificationsWindow = new NotificationsWindow(document.querySelector('.notifications-window'));
-    setInterval(pollNotifications, 1000 * 5);
-    pollNotifications();
+    for (const notif of getSavedNotifications()) {
+        gNotificationsWindow.addQuietly(notif);
+    }
+    gNotificationsWindow.onClear(clearSavedNotifications);
+    gNotificationsWindow.onOpenNotification(unsaveNotification);
+
+    toggleNotificationPolling(true);
 });
 
+document.addEventListener('visibilitychange', ev => {
+    toggleNotificationPolling(!document.hidden);
+});
+
+function toggleNotificationPolling(b) {
+    if (b === _notificationPollingEnabled) {
+        return;
+    }
+    // console.log((b ? 'enabling' : 'disabling') + ' notifications');
+    _notificationPollingEnabled = b;
+    if (b) {
+        pollNotifications();
+        _notificationPollInterval = setInterval(pollNotifications, _notificationPollTime);
+    } else {
+        clearInterval(_notificationPollInterval);
+        _notificationPollInterval = null;
+    }
+}
+
 async function pollNotifications() {
-    const {ok, body} = await request('GET', '/notifications');
+    const {ok, body: notifs} = await request('GET', '/notifications');
     if (!ok) {
         console.warn('Failed to get notifications');
-    } else if (body.length == 0) {
+    } else if (notifs.length == 0) {
         // console.log('No new notifications');
     } else {
-        for (const notif of body) {
-            console.log({notif});
-        }
+        handleNotifications(notifs);
     }
 };
 
+function makeNotificationId() {
+    return Math.random().toString(36).substring(2);
+}
+
+// TODO show notifications grouped by date
+
+function handleNotifications(notifs) {
+    const savedNotifs = getSavedNotifications();
+    for (const notif of notifs) {
+        notif.id = makeNotificationId();
+
+        gNotificationsWindow.add(notif);
+        savedNotifs.push(notif);
+    }
+    saveNotifications(savedNotifs);
+}
+
+function getSavedNotifications() {
+    const notifs = JSON.parse(localStorage.getItem(_notificationsKey) ?? '[]');
+    console.log('saved notifs', notifs);
+    return notifs;
+}
+
+function saveNotifications(notifs) {
+    console.log('saving notifs', notifs);
+    localStorage.setItem(_notificationsKey, JSON.stringify(notifs));
+}
+
+function clearSavedNotifications() {
+    localStorage.removeItem(_notificationsKey);
+}
+
+function unsaveNotification(id) {
+    let notifs = getSavedNotifications();
+    console.log('prev notifs', notifs);
+    notifs = notifs.filter(n => n.id != id);
+    console.log('curr notifs', notifs);
+    saveNotifications(notifs);
+}
+
 class NotificationsWindow {
 
-    // TODO initial notifications, for notifications saved in localStoreage
-
-    // TODO highlight header if window is closed and there are new notifications
-
     constructor(elem) {
+        this.header        = elem.querySelector('.notifications-header');
         this.body          = elem.querySelector('.notifications-body');
         this.container     = elem.querySelector('.notifications-container');
+
         this.toggleButton  = elem.querySelector('.notifications-toggle-button');
+        this.clearButton   = elem.querySelector('.notifications-clear-button');
         this.toggleIcon    = this.toggleButton.querySelector('i');
         this.open          = false;
         this.iconTimeout   = null;
+
         this.notifications = [];
 
+        this.clearCallback = null;
+
         this.toggleButton.addEventListener('click', () => {
-            this.toggle();
+            _tooltips.get(this.toggleButton).hide();
+            this.toggle()
+        });
+
+        this.clearButton.addEventListener('click', () => {
+            this.clear();
         });
     }
 
@@ -55,18 +130,58 @@ class NotificationsWindow {
         if (this.iconTimeout) {
             clearTimeout(this.iconTimeout);
         }
+        const heightTransitionDuration = 500;
         this.iconTimeout = setTimeout(() => {
-            this.toggleIcon.classList.remove(open ? 'bi-arrow-bar-up'   : 'bi-arrow-bar-down');
-            this.toggleIcon.classList.add   (open ? 'bi-arrow-bar-down' : 'bi-arrow-bar-up');
-        }, 500); //500ms is the height transition duration
+            this.toggleIcon.classList.remove(open ? 'bi-caret-up'   : 'bi-caret-down');
+            this.toggleIcon.classList.add   (open ? 'bi-caret-down' : 'bi-caret-up');
+        }, heightTransitionDuration);
+        if (open) {
+            setTimeout(() => {
+                this.header.classList.remove('highlight');
+            }, heightTransitionDuration);
+        }
     }
 
     add(notification) {
+        this.addQuietly(notification);
+        if (!this.open) {
+            this.header.classList.add('highlight');
+        }
+    }
+
+    addQuietly(notification) {
         if (this.notifications.length == 20) {
             this.notifications.shift().remove();
         }
         const elem = makeNotificationElement(notification);
         this.notifications.push(elem);
         this.container.insertAdjacentElement('afterbegin', elem);
+        elem.querySelector('a')?.addEventListener('click', ev => {
+            ev.preventDefault();
+            const id = elem.getAttribute('data-id');
+            if (this.openCallback) {
+                this.openCallback(id);
+            }
+        });
+    }
+
+    clear() {
+        const opacityTransitionDuration = 200;
+        this.notifications.forEach(elem => {
+            elem.style.opacity = 0;
+            setTimeout(() => elem.remove(), opacityTransitionDuration);
+        });
+        this.notifications = [];
+        if (this.clearCallback) {
+            this.clearCallback();
+        }
+    }
+
+    onClear(cb) {
+        this.clearCallback = cb;
+    }
+
+    onOpenNotification(cb) {
+        this.openCallback = cb;
     }
 }

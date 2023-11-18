@@ -44,6 +44,7 @@ export default class NotificationQueues {
     #queues = new Map();
 
     enqueue(userId, notification) {
+        notification.date = new Date();
         console.log('enqueue', userId, notification);
         let queue = this.#queues.get(userId);
         if (!queue) {
@@ -61,8 +62,9 @@ export default class NotificationQueues {
     }
 
     consume(userId) {
-        console.log(`consume ${userId}`);
-        return this.#queues.get(userId)?.consume() ?? [];
+        const notifs = this.#queues.get(userId)?.consume() ?? [];
+        console.log(`consume ${userId}`, notifs);
+        return notifs;
     }
 
 }

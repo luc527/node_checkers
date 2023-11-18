@@ -68,3 +68,11 @@ export async function search(loggedUser, search, limit, offset=0) {
 
     return await query;
 }
+
+export async function findById(id) {
+    const knex = connect();
+    const rows = await knex('player')
+        .select('id', 'name')
+        .where('id', id);
+    return rows.length == 0 ? null : rows[0];
+}

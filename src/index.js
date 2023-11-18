@@ -158,9 +158,10 @@ app.post('/friendRequests', async (req, res) => {
 
     try {
         await Friends.sendRequest(from, to);
+        const {name} = await Users.findById(from);
         notificationQueues.enqueue(to, {
-            type: 'friendRequestReceived',
-            from,
+            message: `${name} wants to be your friend!`,
+            link: '/friendRequests?tab=received',
         });
         res.status(200).end();
     } catch (error) {
@@ -169,29 +170,30 @@ app.post('/friendRequests', async (req, res) => {
 });
 
 app.delete('/friendRequests', async (req, res) => {
-    const from = Number(req.query.from);
-    const to   = Number(req.query.to);
+    const fromId = Number(req.query.from);
+    const toId   = Number(req.query.to);
 
-    const cancelling = req.user == from;
-    const accepting  = req.user == to && req.query.action == 'accept';
-    const rejecting  = req.user == to && req.query.action == 'reject';
+    const cancelling = req.user == fromId;
+    const accepting  = req.user == toId && req.query.action == 'accept';
+    const rejecting  = req.user == toId && req.query.action == 'reject';
 
     try {
         if (cancelling) {
-            await Friends.cancelRequest(from, to);
+            await Friends.cancelRequest(fromId, toId);
         }
         else if (accepting) {
-            await Friends.acceptRequest(from, to);
-            notificationQueues.enqueue(from, {
-                type: 'friendRequestAccepted',
-                to,
+            await Friends.acceptRequest(fromId, toId);
+            const {name} = await Users.findById(toId);
+            notificationQueues.enqueue(fromId, {
+                message: `${name} accepted your friend request!`,
+                link: '/friends'
             });
         }
         else if (rejecting) {
-            await Friends.rejectRequest(from, to);
-            notificationQueues.enqueue(from, {
-                type: 'friendRequestRejected',
-                to,
+            await Friends.rejectRequest(fromId, toId);
+            const {name} = await Users.findById(toId);
+            notificationQueues.enqueue(fromId, {
+                message: `${name} rejected your friend request...`,
             });
         }
         else {

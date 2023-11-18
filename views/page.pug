@@ -28,12 +28,13 @@ block layoutBody
   div.notifications-window
     div.notifications-header
       span Notifications
+      button.notifications-clear-button.btn(data-bs-toggle="tooltip", data-bs-title="Clear")
+        i.bi.bi-x-square
       span.ms-auto
-        button.notifications-toggle-button.btn.btn-light.btn-sm
-          i.bi.bi-arrow-bar-up
+        button.notifications-toggle-button.btn(data-bs-toggle="tooltip", data-bs-title="Toggle")
+          i.bi.bi-caret-up
     div.notifications-body
       div.notifications-container
-        | Hello world
 
 block layoutScripts
   script(src="/static/js/notifications.js")
