@@ -8,12 +8,21 @@
 const _notificationsKey = 'notifications';
 const _notificationPollTime = 5 * 1000;
 
+let _enabledInThisPage = true;
+
 let _notificationPollingEnabled = null;
 let _notificationPollInterval = null;
 
 let gNotificationsWindow = null;
 
 document.addEventListener('DOMContentLoaded', () => {
+    const url = new URL(location);
+    _enabledInThisPage = url.searchParams.get('notifications') != 'disabled';
+    if (!_enabledInThisPage) {
+        document.querySelector('.notifications-window').remove();
+        return;
+    }
+
     gNotificationsWindow = new NotificationsWindow(document.querySelector('.notifications-window'));
     for (const notif of getSavedNotifications()) {
         gNotificationsWindow.addQuietly(notif);
@@ -25,6 +34,9 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 document.addEventListener('visibilitychange', ev => {
+    if (!_enabledInThisPage) {
+        return;
+    }
     toggleNotificationPolling(!document.hidden);
 });
 
@@ -92,6 +104,29 @@ function unsaveNotification(id) {
     notifs = notifs.filter(n => n.id != id);
     console.log('curr notifs', notifs);
     saveNotifications(notifs);
+}
+
+function makeNotificationElement(notification) {
+    const {message, link} = notification;
+
+    const elem = document.createElement('div');
+    elem.classList.add('notification');
+    elem.setAttribute('data-id', notification.id);
+
+    elem.insertAdjacentHTML('beforeend', `
+        <span class="notification-message">${message}</span>
+    `);
+    if (link) {
+        elem.insertAdjacentHTML('beforeend', `
+            <span class="notification-link">
+                <a class="btn btn-link" href="${link}" target="_blank">
+                    <i class="bi bi-box-arrow-up-right"></i>
+                </a>
+            </span>
+        `);
+    }
+
+    return elem;
 }
 
 class NotificationsWindow {

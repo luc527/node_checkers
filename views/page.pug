@@ -17,12 +17,25 @@ block layoutNav
                 a.dropdown-item(href="/friendRequests") Friend requests
               li
                 a.dropdown-item(href="/friends") Friends
-          li.nav-item.ms-auto
-            a.nav-link(href="/exit") Exit
+          li.nav-item.dropdown
+            a.nav-link.dropdown-toggle(href="#", data-bs-toggle="dropdown") Play
+            ul.dropdown-menu
+              li
+                a.dropdown-item(href="/play/ai") Against an AI
+              li
+                a.dropdown-item(href="/play/human") Against a human
+          li.nav-item.dropdown.ms-auto
+            a.nav-link.dropdown-toggle(href="#", data-bs-toggle="dropdown")
+              | #[i.bi.bi-person] #{span=loggedUserName}
+            ul.dropdown-menu
+              li
+                a.dropdown-item(href="/exit") Exit
 
 block layoutBody
   div.card.mt-3
     div.card-body
+      h4= title
+      hr
       block pageBody
 
   div.notifications-window
@@ -38,3 +51,4 @@ block layoutBody
 
 block layoutScripts
   script(src="/static/js/notifications.js")
+  block pageScripts

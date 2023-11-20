@@ -12,6 +12,13 @@ function successToast(text) {
     });
 }
 
+function infoToast(text) {
+    Toast.fire({
+        icon: 'info',
+        text,
+    });
+}
+
 async function request(method, url, reqBody) {
     const headers = {
         'Content-Type': 'application/json',
@@ -57,27 +64,4 @@ function elt(tag, classes, ...children) {
         e.append(child);
     }
     return e;
-}
-
-function makeNotificationElement(notification) {
-    const {message, link} = notification;
-
-    const elem = document.createElement('div');
-    elem.classList.add('notification');
-    elem.setAttribute('data-id', notification.id);
-
-    elem.insertAdjacentHTML('beforeend', `
-        <span class="notification-message">${message}</span>
-    `);
-    if (link) {
-        elem.insertAdjacentHTML('beforeend', `
-            <span class="notification-link">
-                <a class="btn btn-link" href="${link}">
-                    <i class="bi bi-box-arrow-up-right"></i>
-                </a>
-            </span>
-        `);
-    }
-
-    return elem;
 }

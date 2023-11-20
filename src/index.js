@@ -27,8 +27,9 @@ app.use(async (req, res, next) => {
     const token = req.cookies.token;
     if (typeof token === 'string') {
         try {
-            const {id} = await jwt.verify(token, process.env.JWT_SECRET);
-            req.user = id;
+            const {id, name} = await jwt.verify(token, process.env.JWT_SECRET);
+            req.user = {id, name};
+            res.locals.loggedUserName = name;  // for use in templates
         } catch (ignored) {}
     }
     next();
@@ -66,7 +67,10 @@ app.post('/login', async (req, res) => {
     if (!ok) {
         res.status(400).json({message: error});
     } else {
-        const token = await jwt.sign({id: user.id}, process.env.JWT_SECRET);
+        const token = await jwt.sign({
+            id: user.id,
+            name: user.name
+        }, process.env.JWT_SECRET);
         res.cookie('token', token);
         res.status(200).end();
     }
@@ -85,8 +89,13 @@ app.use((req, res, next) => {
     if (req.user) {
         next();
     } else {
-        // FIXME if content type is json, return this, otherwise return a page or redirect to login
-        res.status(403).json({message: 'Unauthorized'});
+        res.status(403);
+        // TODO test
+        // if (req.is('json')) {
+            res.json({message: 'Unauthorized'});
+        // } else {
+            // res.render('unauthorized', {title: 'Unauthorized'})
+        // }
     }
 });
 
@@ -105,14 +114,14 @@ app.get('/users', async (req, res) => {
     let errorMessage = '';
 
     try {
-        users = await Users.search(req.user, search, perPage, offset);
+        users = await Users.search(req.user.id, search, perPage, offset);
     } catch (error) {
         errorMessage = error;
     }
 
     const options = {
         title: 'Search users',
-        loggedUser: req.user,
+        loggedUser: req.user.id,
         users,
         errorMessage,
         search,
@@ -129,9 +138,9 @@ app.get('/friendRequests', async (req, res) => {
     let errorMessage           = '';
 
     try {
-        const requests = await Friends.requests(req.user);
-        friendRequestsSent     = requests.filter(r => r.from_id == req.user);
-        friendRequestsReceived = requests.filter(r => r.to_id   == req.user);
+        const requests = await Friends.requests(req.user.id);
+        friendRequestsSent     = requests.filter(r => r.from_id == req.user.id);
+        friendRequestsReceived = requests.filter(r => r.to_id   == req.user.id);
     } catch (error) {
         errorMessage = error;
     }
@@ -146,7 +155,7 @@ app.get('/friendRequests', async (req, res) => {
 })
 
 app.post('/friendRequests', async (req, res) => {
-    const from = Number(req.user);
+    const from = Number(req.user.id);
     const to   = Number(req.body.id);
 
     if (!Number.isInteger(from) || !Number.isInteger(to)) {
@@ -173,9 +182,9 @@ app.delete('/friendRequests', async (req, res) => {
     const fromId = Number(req.query.from);
     const toId   = Number(req.query.to);
 
-    const cancelling = req.user == fromId;
-    const accepting  = req.user == toId && req.query.action == 'accept';
-    const rejecting  = req.user == toId && req.query.action == 'reject';
+    const cancelling = req.user.id == fromId;
+    const accepting  = req.user.id == toId && req.query.action == 'accept';
+    const rejecting  = req.user.id == toId && req.query.action == 'reject';
 
     try {
         if (cancelling) {
@@ -214,7 +223,7 @@ app.get('/friends', async (req, res) => {
     let errorMessage = '';
 
     try {
-        friends = await Friends.ofUser(req.user, perPage, offset);
+        friends = await Friends.ofUser(req.user.id, perPage, offset);
     } catch(error) {
         errorMessage = error.toString();
     }
@@ -235,7 +244,7 @@ app.delete('/friends', async (req, res) => {
         res.status(400).json({message: 'Invalid user ID'});
     }
     try {
-        await Friends.remove(req.user, id);
+        await Friends.remove(req.user.id, id);
         res.status(200).end();
     } catch (error) {
         res.status(400).json({message: error.toString()});
@@ -244,7 +253,20 @@ app.delete('/friends', async (req, res) => {
 
 app.get('/notifications', (req, res) => {
     res.header('Cache-Control', 'no-cache');
-    res.status(200).json(notificationQueues.consume(req.user));
+    res.status(200).json(notificationQueues.consume(req.user.id));
+});
+
+app.get('/play/ai', (req, res) => {
+    res.render('ai-form', {title: 'Play against an AI'});
+});
+
+app.get('/play/human', (req, res) => {
+    res.status(200).send('TODO');
+});
+
+app.get('/play', (req, res) => {
+    res.header('Cache-Control', 'no-cache');
+    res.render('play', {title: 'Play against an AI'});
 });
 
 //

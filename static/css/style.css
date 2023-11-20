@@ -87,3 +87,9 @@ body {
 .notification-link {
     margin-left: auto;
 }
+
+.board-canvas {
+    border: 2px #779556 solid;
+    width: 60%;
+    border-radius: var(--bs-border-radius);
+}

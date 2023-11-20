@@ -1,0 +1,11 @@
+extends page.pug
+
+block pageBody
+  div.d-flex.justify-content-center
+    canvas.board-canvas
+
+block pageScripts
+  script(src="/static/js/game/util.js")
+  script(src="/static/js/game/BoardView.js")
+  script(src="/static/js/game/Client.js")
+  script(src="/static/js/views/play.js")

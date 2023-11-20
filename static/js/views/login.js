@@ -16,7 +16,5 @@ form.onsubmit = async ev => {
         return;
     }
 
-    scheduleSuccessToast('Logged on successfully!');
-
     location.assign('/');
 };

@@ -39,12 +39,12 @@ services:
     depends_on:
       - pg
 
-  #ws:
-  #  build:
-  #    context: ../ws_checkers
-  #    dockerfile: ./Dockerfile
-  #  restart: unless-stopped
-  #  environment:
-  #    WS_PORT: ${WS_PORT:-8081}  # TODO actually use the WS_PORT in the dockerfile
+  ws:
+    build:
+      context: ../ws_checkers
+      dockerfile: ./Dockerfile
+    restart: unless-stopped
+    ports:
+      - ${WS_PORT:-88}:8088
 
 

@@ -1,0 +1,8 @@
+extends layout.pug
+
+block layoutBody
+  div.card.mt-3
+    div.card-body
+      h1 Unauthorized
+      span You are not authorized to access this page. You'll be redirected to the #[a(href="/login") login] page.
+      script(src="/static/js/views/unauthorized.js")

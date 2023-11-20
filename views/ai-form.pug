@@ -1,0 +1,24 @@
+extends page.pug
+
+block pageBody
+  form(method="GET", action="/play")
+    input(type="hidden", name="mode", value="ai")
+    div.d-flex.flex-row.gap-3.flex-end.align-items-end
+      div.flex-fill
+        label Heuristic
+        select.form-control(name="heuristic")
+          option(value="UnweightedCount") Unweighted count
+          option(value="WeightedCount", selected) Weighted count
+      div.flex-fill
+        label Time limit
+        select.form-control(name="timeLimit")
+          - const times = [100, 200, 500, 1_000, 2_000, 4_000, 6_000, 8_000, 10_000]
+          each time in times
+            - const selected = time == 2_000
+            option(value=time, selected) #{time/1000}s
+      div.flex-fill
+        label Piece color
+        select.form-control(name="color")
+          option(value="white") White
+          option(value="black") Black
+      button(type="submit").btn.btn-primary Play
