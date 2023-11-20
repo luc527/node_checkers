@@ -91,11 +91,11 @@ app.use((req, res, next) => {
     } else {
         res.status(403);
         // TODO test
-        // if (req.is('json')) {
+        if (req.is('json')) {
             res.json({message: 'Unauthorized'});
-        // } else {
-            // res.render('unauthorized', {title: 'Unauthorized'})
-        // }
+        } else {
+            res.render('unauthorized', {title: 'Unauthorized'})
+        }
     }
 });
 

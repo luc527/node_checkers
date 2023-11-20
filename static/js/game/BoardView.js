@@ -1,6 +1,3 @@
-// TODO each class in a different file, file having the same name as the class
-// maybe turn into modules
-
 class BoardView {
 
     static SIDE = 1024;
@@ -20,6 +17,8 @@ class BoardView {
         this.context = canvas.getContext('2d', {alpha: false});
         this.highlighted = new Set();
         this.clickCallbacks = [];
+
+        this.lastPieces = null;
 
         this.canvas.addEventListener('click', ev => {
             const rect = this.canvas.getBoundingClientRect();
@@ -118,18 +117,27 @@ class BoardView {
     }
 
     draw(pieces) {
+        this.lastPieces = pieces;
         this.#drawSquares();
         this.#drawPieces(pieces);
         this.highlighted.clear();
     }
 
-    highlight({row, col}, r=255, g=255, b=0) {
+    redraw() {
+        if (this.lastPieces != null) {
+            this.draw(this.lastPieces);
+        }
+    }
+
+    highlight({row, col}, rgb=[255, 2550, 0]) {
         if (this.highlighted.has(poshash(row, col))) {
             return;
         }
 
         const ctx = this.context;
         const side = BoardView.SQUARE_SIDE;
+
+        const [r, g, b] = rgb;
         ctx.fillStyle = `rgba(${r}, ${g}, ${b}, 0.3)`;
 
         const x = side * col;
