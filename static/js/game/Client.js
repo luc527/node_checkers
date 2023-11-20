@@ -42,6 +42,9 @@ class Client {
         }, 2000);
     }
 
+    // TODO remove
+    reconnect(){this.#reconnect()}
+
     #connect() {
         const url = this.url;
         const ws  = new WebSocket(url);
@@ -53,7 +56,11 @@ class Client {
                 ws.send(this.queue.shift());
             }
             if (this.gameId) {
-                // TODO reconnect to the game
+                if (this.gameType == 'mach') {
+                    this.connectToMachineGame(this.gameId);
+                } else {
+                    this.connectToHumanGame(this.gameId, this.myToken);
+                }
             }
         };
 
@@ -98,14 +105,14 @@ class Client {
 
         ws.onclose = ev => {
             if (this.verbose) console.log('websocket close', ev);
-            if (ev.code != 1000) {
+            if (ev.code != 1000 && ev.code != 1005) {
                 this.#reconnect();
             }
         };
     }
 
     createMachineGame(myColor='white', heuristic='WeightedCount', timeLimitMs=1000) {
-        this.gameType = 'mach/new';
+        this.gameType = 'mach';
         this.send('mach/new', {
             humanColor: myColor,
             heuristic,
@@ -115,19 +122,26 @@ class Client {
     }
 
     connectToMachineGame(id) {
-        this.gameType = 'mach/connect';
+        this.gameType = 'mach';
         this.send('mach/connect', {id});
         return this;
     }
 
     createHumanGame(color='white') {
-        this.gameType = 'human/new';
+        this.gameType = 'human';
         this.send('human/new', {color});
         return this;
     }
 
-    doPly(index) {
-        this.send('ply', { version: this.lastVersion, index });
+    connectToHumanGame(id, token) {
+        this.gameType = 'human';
+        this.send('human/connect', {id, token});
+        return this;
+    }
+
+    doPly(ply) {
+        this.send('ply', { version: this.lastVersion, ply });
+        return this;
     }
 }
 

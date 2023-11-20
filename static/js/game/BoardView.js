@@ -123,10 +123,8 @@ class BoardView {
         this.highlighted.clear();
     }
 
-    redraw() {
-        if (this.lastPieces != null) {
-            this.draw(this.lastPieces);
-        }
+    clearHighlight() {
+        this.draw(this.lastPieces ?? []);
     }
 
     highlight({row, col}, rgb=[255, 2550, 0]) {

@@ -9,48 +9,59 @@ const PLIES_RGB = [
 
 const ONE_BY_ONE_RGB = [255, 0, 255];  //magenta
 
+// FIXME sending ply might fail, but we go to the 'waitingOpponentPly' state anyways
+
 let boardView;
 let viewState;
 let client;
 let selectedSource;
 
-let pliesGrouped = new Map();
+let currentPlies;
+let plyIndexesGrouped = new Map();
 
 document.addEventListener('DOMContentLoaded', () => {
+    //
+    // Setup objects
+    //
+
     const canvas = document.querySelector('.board-canvas');
+
     boardView = new BoardView(canvas);
 
-    client = new Client(WS_URL, true);
+    const verbose = true;
+    client = new Client(WS_URL, verbose);
+
+    //
+    // Setup listeners
+    //
 
     client.on('state', state => {
         const {plies, pieces, toPlay, result} = state;
-
-        if (result == 'over') {
-            infoToast('Game over');
-            return;
-        }
+        currentPlies = plies;
 
         boardView.draw(pieces);
 
+        if (result != 'playing') {
+            viewState = 'over';
+            infoToast(`Game over: ${result}`);
+            return;
+        }
+
         if (toPlay == client.myColor) {
             viewState = 'waitingSourceSelection';
-            pliesGrouped.clear();
-            for (const ply of plies) {
-                const source = ply.find(ins => ins.type == 'move');
-                boardView.highlight(source);
-
-                const hash = poshash(source);
-
-                let sameSourcePlies = pliesGrouped.get(hash);
-                if (!sameSourcePlies) {
-                    sameSourcePlies = [];
-                    pliesGrouped.set(hash, sameSourcePlies);
+            plyIndexesGrouped.clear();
+            for (let i = 0; i < currentPlies.length; i++) {
+                const hash = poshash(plies[i].find(ins => ins.type == 'move'));
+                let sameSourceIndexes = plyIndexesGrouped.get(hash);
+                if (!sameSourceIndexes) {
+                    sameSourceIndexes = [];
+                    plyIndexesGrouped.set(hash, sameSourceIndexes);
                 }
-                sameSourcePlies.push(ply);
-
+                sameSourceIndexes.push(i);
             }
-        } else {
-            viewState = 'waitingOpponentPly';
+
+            const sources = Array.from(plyIndexesGrouped.keys()).map(posrecv);
+            sources.forEach(pos => boardView.highlight(pos));
         }
     });
 
@@ -58,20 +69,28 @@ document.addEventListener('DOMContentLoaded', () => {
         errorToast(error.message);
     });
 
+    // TODO on <esc> undo ply selection
+
     boardView.onClick((row, col) => {
         switch (viewState) {
         case 'waitingOpponentPly':
+        case 'over':
+            // Do nothing
             break;
         case 'waitingSourceSelection':
-            maybeSelectSource(row, col);
+            selectSource(row, col);
             break;
         case 'waitingPlySelection':
-            maybeSelectPly(row, col);
+            selectPly(row, col);
             break;
         default:
             errorToast('invalid or unimplemeted view state');
         }
     });
+
+    //
+    // Create or connect to game
+    //
 
     const params = new URL(location).searchParams;
 
@@ -93,6 +112,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         break;
     case 'human':
+        infoToast('TODO unimplemented');
         break;
     default:
         errorToast(`Invalid mode "${params.get('mode')}"`);
@@ -100,54 +120,89 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
-function maybeSelectSource(row, col) {
-    const plies = pliesGrouped.get(poshash(row, col));
-    if (!plies) {
-        return;
+function waitSourceSelection() {
+    viewState = 'waitingSourceSelection';
+    boardView.clearHighlight();
+    for (const sourceHash of plyIndexesGrouped.keys()) {
+        const source = posrecv(sourceHash);
+        boardView.highlight(source);
     }
+}
 
-    selectedSource = {row, col};
+function waitPlySelection() {
     viewState = 'waitingPlySelection';
 
-    boardView.redraw();
-    const destinations = plies
-        .map(ply => ply
-            .filter(ins => ins.type == 'move')
-            .map(ins => ({row: ins.drow, col: ins.dcol}))
-        );
-    const overlap = false;
-    // to detect overlap consider only drow and dcol of each move instruction
-    if (overlap || plies.length > PLIES_RGB.length) {
-        // show one by one with scroll
+    let overlap = false;
+    const destinationSet      = new Set()
+    const destinationsGrouped = [];
+
+    const plyIndexes = plyIndexesGrouped.get(poshash(selectedSource));
+    for (const plyIndex of plyIndexes) {
+        const ply = currentPlies[plyIndex];
+        const plyDestinations = [];
+        for (const instruction of ply) {
+            if (instruction.type != 'move') {
+                continue;
+            }
+            const destination = {
+                row: instruction.drow,
+                col: instruction.dcol,
+            };
+            const hash = poshash(destination);
+            if (destinationSet.has(hash)) {
+                overlap = true;
+            }
+            destinationSet.add(hash);
+            plyDestinations.push(destination);
+        }
+        destinationsGrouped.push(plyDestinations);
+    }
+
+    boardView.clearHighlight();
+    if (overlap || plyIndexes.length > PLIES_RGB.length) {
+        infoToast('TODO scroll mode');
     } else {
-        for (let i = 0; i < destinations.length; i++) {
+        for (let i = 0; i < destinationsGrouped.length; i++) {
+            const plyDestinations = destinationsGrouped[i];
             let rgb = PLIES_RGB[i];
-            for (const {row, col} of destinations[i]) {
-                boardView.highlight({row, col}, rgb);
+            for (const {row, col} of plyDestinations) {
+                boardView.highlight({row, col}, rgb)
                 rgb = darken(rgb);
             }
         }
     }
-    // in both cases, the initial colors should be bright and then should go gradually darker to indicate the order of the positions
 }
 
-function maybeSelectPly(row, col) {
-    // TODO Handle scroll mode
-    let selectedPly;
-    for (const ply of pliesGrouped.get(poshash(selectedSource))) {
-        if (ply.some(ins => ins.drow == row && ins.dcol == col)) {
-            selectedPly = ply;
+function waitOpponentPly() {
+    boardView.clearHighlight();
+    viewState = 'waitingOpponentPly';
+}
+
+function selectSource(row, col) {
+    if (!plyIndexesGrouped.has(poshash(row, col))) {
+        return;
+    }
+
+    selectedSource = {row, col};
+    waitPlySelection();
+}
+
+function selectPly(row, col) {
+    let selectedPlyIndex = null;
+    const plyIndexes = plyIndexesGrouped.get(poshash(selectedSource));
+    for (const plyIndex of plyIndexes) {
+        const ply = currentPlies[plyIndex];
+        if (ply.some(ins => ins.type == 'move' && ins.drow == row && ins.dcol == col)) {
+            selectedPlyIndex = plyIndex;
             break;
         }
     }
-    if (!selectedPly) {
-        boardView.redraw();
-        Array.from(pliesGrouped.keys())
-            .map(posrecv)
-            .forEach(pos => boardView.highlight(pos));
-        viewState = 'waitingSourceSelection';
+
+    if (selectedPlyIndex === null) {
+        waitSourceSelection();
     } else {
-        
+        client.doPly(selectedPlyIndex);
+        waitOpponentPly();
     }
 }
 
