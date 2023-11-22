@@ -1,0 +1,16 @@
+extends page.pug
+
+block pageBody
+  form(name="human-form", method="GET", action="/play")
+    input(type="hidden", name="mode", value="human")
+    div.d-flex.flex-row.gap-3.flex-end.align-items-end
+      div.flex-fill
+        label Opponent username
+        input.form-control(name="opponent", value=opponent)
+      div.flex-fill
+        label Your piece color
+        select.form-control(name="color")
+          option(value="white") White
+          option(value="black") Black
+      button(type="submit").btn.btn-primary Play
+  script(src="/static/js/views/human-form.js")

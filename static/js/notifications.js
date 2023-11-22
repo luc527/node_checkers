@@ -13,7 +13,7 @@ let _enabledInThisPage = true;
 let _notificationPollingEnabled = null;
 let _notificationPollInterval = null;
 
-let gNotificationsWindow = null;
+let _notificationsWindow = null;
 
 document.addEventListener('DOMContentLoaded', () => {
     const url = new URL(location);
@@ -23,9 +23,9 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
     }
 
-    gNotificationsWindow = new NotificationsWindow(document.querySelector('.notifications-window'));
+    _notificationsWindow = new NotificationsWindow(document.querySelector('.notifications-window'));
     for (const notif of getSavedNotifications()) {
-        gNotificationsWindow.addQuietly(notif);
+        _notificationsWindow.addQuietly(notif);
     }
 
     toggleNotificationPolling(true);
@@ -75,7 +75,7 @@ function handleNotifications(notifs) {
     for (const notif of notifs) {
         notif.id = makeNotificationId();
 
-        gNotificationsWindow.add(notif);
+        _notificationsWindow.add(notif);
         savedNotifs.push(notif);
     }
     saveNotifications(savedNotifs);
@@ -83,12 +83,10 @@ function handleNotifications(notifs) {
 
 function getSavedNotifications() {
     const notifs = JSON.parse(localStorage.getItem(_notificationsKey) ?? '[]');
-    console.log('saved notifs', notifs);
     return notifs;
 }
 
 function saveNotifications(notifs) {
-    console.log('saving notifs', notifs);
     localStorage.setItem(_notificationsKey, JSON.stringify(notifs));
 }
 
@@ -98,9 +96,7 @@ function clearSavedNotifications() {
 
 function unsaveNotification(id) {
     let notifs = getSavedNotifications();
-    console.log('prev notifs', notifs);
     notifs = notifs.filter(n => n.id != id);
-    console.log('curr notifs', notifs);
     saveNotifications(notifs);
 }
 
