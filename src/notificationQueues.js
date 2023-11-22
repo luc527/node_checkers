@@ -43,8 +43,9 @@ class NotificationQueue {
 export default class NotificationQueues {
     #queues = new Map();
 
-    enqueue(userId, notification) {
-        notification.date = new Date();
+    enqueue(userId, message, link='') {
+        const date = new Date();
+        const notification = { message, link, date };
         console.log('enqueue', userId, notification);
         let queue = this.#queues.get(userId);
         if (!queue) {

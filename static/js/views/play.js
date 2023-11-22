@@ -95,14 +95,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const params = new URL(location).searchParams;
 
     switch (params.get('mode')) {
-    case 'ai':
+    case 'ai': {
         const heuristic = params.get('heuristic');
         const timeLimit = Number(params.get('timeLimit'));
         const color     = params.get('color');
         const id        = params.get('id');
-        client.on('machine/connected', msg => {
-            client.id = msg.id;
-        });
         if (heuristic && timeLimit) {
             client.createMachineGame(color, heuristic, timeLimit);
         } else if (id) {
@@ -110,10 +107,24 @@ document.addEventListener('DOMContentLoaded', () => {
         } else {
             errorToast(`Missing parameters for machine game`);
         }
-        break;
-    case 'human':
-        infoToast('TODO unimplemented');
-        break;
+    }
+    break;
+    case 'human': {
+        const opponentId = decodeURIComponent(params.get('opponentId'));
+        const color      = params.get('color');
+        const gameId     = decodeURIComponent(params.get('id'));
+        const token      = decodeURIComponent(params.get('token'));
+
+        if (opponentId && color) {
+            client.on('human/created', message => sendPlayInvite(message, opponentId))
+            client.createHumanGame(color);
+        } else if (gameId && token) {
+            client.connectToHumanGame(gameId, token);
+        } else {
+            errorToast(`Missing parameters for game against human`);
+        }
+    }
+    break;
     default:
         errorToast(`Invalid mode "${params.get('mode')}"`);
         break;
@@ -212,4 +223,14 @@ function darken([r, g, b]) {
         Math.max(0, g-30),
         Math.max(0, b-30),
     ]
+}
+
+async function sendPlayInvite(createdMessage, opponentId) {
+    const {id, opponentToken: token} = createdMessage;
+    const {ok} = await request('POST', `/users/${opponentId}/gameInvites`, { id, token });
+    if (!ok) {
+        errorToast('Failed to invite opponent');
+    } else {
+        console.info('Opponent invited successfully');
+    }
 }

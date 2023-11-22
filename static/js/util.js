@@ -51,6 +51,7 @@ async function request(method, url, reqBody) {
 
     return {
         ok: res.ok,
+        status: res.status,
         body: resBody,
     };
 }

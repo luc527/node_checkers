@@ -76,3 +76,11 @@ export async function findById(id) {
         .where('id', id);
     return rows.length == 0 ? null : rows[0];
 }
+
+export async function findByName(name) {
+    const knex = connect();
+    const rows = await knex('player')
+        .select('id', 'name')
+        .where('name', name);
+    return rows.length == 0 ? null : rows[0];
+}

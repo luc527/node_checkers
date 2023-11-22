@@ -132,6 +132,33 @@ app.get('/users', async (req, res) => {
     res.render('user-search', options);
 });
 
+app.post('/users/:id/gameInvites', (req, res) => {
+    // regex validation with :id(\d+) didn't work
+    const toId = Number(req.params.id);
+    if (!Number.isInteger(toId)) {
+        res.status(400).json({message: 'Invalid user ID'});
+    }
+    const {id, token} = req.body;
+    notificationQueues.enqueue(toId,
+        `${req.user.name} invites you to play!`,
+        `/play?mode=human&id=${encodeURIComponent(id)}&token=${encodeURIComponent(token)}`,
+    );
+});
+
+app.get('/users/checkName', async (req, res) => {
+    const {name} = req.query;
+    try {
+        const user = await Users.findByName(name)
+        if (user) {
+            res.json(user);
+        } else {
+            res.status(404).json({message: 'User not found'});
+        }
+    } catch (error) {
+        res.status(500).json({message: 'Internal server error'});
+    }
+});
+
 app.get('/friendRequests', async (req, res) => {
     let friendRequestsSent     = [];
     let friendRequestsReceived = [];
@@ -168,10 +195,10 @@ app.post('/friendRequests', async (req, res) => {
     try {
         await Friends.sendRequest(from, to);
         const {name} = await Users.findById(from);
-        notificationQueues.enqueue(to, {
-            message: `${name} wants to be your friend!`,
-            link: '/friendRequests?tab=received',
-        });
+        notificationQueues.enqueue(to,
+            `${name} wants to be your friend!`,
+            '/friendRequests?tab=received'
+        );
         res.status(200).end();
     } catch (error) {
         res.status(400).json({message: error.toString()});
@@ -193,17 +220,15 @@ app.delete('/friendRequests', async (req, res) => {
         else if (accepting) {
             await Friends.acceptRequest(fromId, toId);
             const {name} = await Users.findById(toId);
-            notificationQueues.enqueue(fromId, {
-                message: `${name} accepted your friend request!`,
-                link: '/friends'
-            });
+            notificationQueues.enqueue(fromId,
+                `${name} accepted your friend request!`,
+                '/friends'
+            );
         }
         else if (rejecting) {
             await Friends.rejectRequest(fromId, toId);
             const {name} = await Users.findById(toId);
-            notificationQueues.enqueue(fromId, {
-                message: `${name} rejected your friend request...`,
-            });
+            notificationQueues.enqueue(fromId, `${name} rejected your friend request...`);
         }
         else {
             res.status(400).json({message: 'Invalid action'});
@@ -261,7 +286,10 @@ app.get('/play/ai', (req, res) => {
 });
 
 app.get('/play/human', (req, res) => {
-    res.status(200).send('TODO');
+    res.render('human-form', {
+        title: 'Play against someone',
+        opponent: req.query.opponent,
+    });
 });
 
 app.get('/play', (req, res) => {

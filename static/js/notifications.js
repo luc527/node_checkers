@@ -27,8 +27,6 @@ document.addEventListener('DOMContentLoaded', () => {
     for (const notif of getSavedNotifications()) {
         gNotificationsWindow.addQuietly(notif);
     }
-    gNotificationsWindow.onClear(clearSavedNotifications);
-    gNotificationsWindow.onOpenNotification(unsaveNotification);
 
     toggleNotificationPolling(true);
 });
@@ -111,7 +109,6 @@ function makeNotificationElement(notification) {
 
     const elem = document.createElement('div');
     elem.classList.add('notification');
-    elem.setAttribute('data-id', notification.id);
 
     elem.insertAdjacentHTML('beforeend', `
         <span class="notification-message">${message}</span>
@@ -119,9 +116,9 @@ function makeNotificationElement(notification) {
     if (link) {
         elem.insertAdjacentHTML('beforeend', `
             <span class="notification-link">
-                <a class="btn btn-link" href="${link}" target="_blank">
+                <button class="btn btn-link">
                     <i class="bi bi-box-arrow-up-right"></i>
-                </a>
+                </button>
             </span>
         `);
     }
@@ -143,8 +140,6 @@ class NotificationsWindow {
         this.iconTimeout   = null;
 
         this.notifications = [];
-
-        this.clearCallback = null;
 
         this.toggleButton.addEventListener('click', () => {
             _tooltips.get(this.toggleButton).hide();
@@ -184,6 +179,12 @@ class NotificationsWindow {
         }
     }
 
+    clearNotification(elem) {
+        const opacityTransitionDuration = 200;
+        elem.style.opacity = 0;
+        setTimeout(() => elem.remove(), opacityTransitionDuration);
+    }
+
     addQuietly(notification) {
         if (this.notifications.length == 20) {
             this.notifications.shift().remove();
@@ -191,32 +192,19 @@ class NotificationsWindow {
         const elem = makeNotificationElement(notification);
         this.notifications.push(elem);
         this.container.insertAdjacentElement('afterbegin', elem);
-        elem.querySelector('a')?.addEventListener('click', ev => {
-            ev.preventDefault();
-            const id = elem.getAttribute('data-id');
-            if (this.openCallback) {
-                this.openCallback(id);
-            }
+
+        elem.querySelector('.btn-link')?.addEventListener('click', () => {
+            unsaveNotification(notification.id);
+            window.open(notification.link, '_blank');
+            this.clearNotification(elem);
         });
     }
 
     clear() {
-        const opacityTransitionDuration = 200;
         this.notifications.forEach(elem => {
-            elem.style.opacity = 0;
-            setTimeout(() => elem.remove(), opacityTransitionDuration);
+            this.clearNotification(elem);
         });
         this.notifications = [];
-        if (this.clearCallback) {
-            this.clearCallback();
-        }
-    }
-
-    onClear(cb) {
-        this.clearCallback = cb;
-    }
-
-    onOpenNotification(cb) {
-        this.openCallback = cb;
+        clearSavedNotifications();
     }
 }

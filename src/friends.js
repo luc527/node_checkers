@@ -63,13 +63,12 @@ export async function cancelRequest(from, to) {
 
 
 export async function acceptRequest(from, to) {
-    // FIXME should be transaction
     const knex = connect();
-    await Promise.all([
-        deleteRequest(knex, from, to),
-        knex('friends_with').insert({player1_id: from, player2_id: to}),
-        knex('friends_with').insert({player1_id: to, player2_id: from}),
-    ]);
+    await knex.transaction(async trx => {
+        await deleteRequest(trx, from, to);
+        await trx('friends_with').insert({player1_id: from, player2_id: to});
+        await trx('friends_with').insert({player1_id: to, player2_id: from});
+    });
 }
 
 
