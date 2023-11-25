@@ -7,7 +7,7 @@ const PLIES_RGB = [
     [255, 255, 0],  //yellow
 ];
 
-const ONE_BY_ONE_RGB = [255, 0, 255];  //magenta
+const SCROLL_RGB = [255, 0, 255];  //magenta
 
 // FIXME sending ply might fail, but we go to the 'waitingOpponentPly' state anyways
 
@@ -18,6 +18,9 @@ let selectedSource;
 
 let currentPlies;
 let plyIndexesGrouped = new Map();
+
+let scrollMode = false;
+let scrollIndex = 0;
 
 document.addEventListener('DOMContentLoaded', () => {
     //
@@ -98,6 +101,21 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
+    document.addEventListener('wheel', ev => {
+        if (viewState != 'waitingPlySelection' || !scrollMode) {
+            return;
+        }
+
+        const plyIndexes = plyIndexesGrouped.get(poshash(selectedSource));
+
+        const offset = ev.wheelDelta > 0 ? 1 : -1;
+        scrollIndex += offset;
+        if (scrollIndex < 0)                     scrollIndex = plyIndexes.length - 1;
+        if (scrollIndex > plyIndexes.length - 1) scrollIndex = 0;
+
+        drawPlyScrollMode(currentPlies[scrollIndex]);
+    });
+
     //
     // Create or connect to game
     //
@@ -131,7 +149,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (opponentId && color) {
             client.on('human/created', message => {
                 sendPlayInvite(message, opponentId);
-                const {myToken, opponentToken} = message;
+                const {yourToken: myToken, opponentToken} = message;
                 saveCreatedHumanGame(message.id, message.yourColor, opponentId, myToken, opponentToken)
             });
             client.createHumanGame(color);
@@ -157,47 +175,62 @@ function waitSourceSelection() {
     }
 }
 
+function plyDestinations(ply) {
+    const destinations = [];
+    for (const instruction of ply) {
+        if (instruction.type != 'move') {
+            continue;
+        }
+        const destination = {
+            row: instruction.drow,
+            col: instruction.dcol,
+        };
+        destinations.push(destination);
+    }
+    return destinations;
+}
+
+function hasOverlap(destinationsGrouped) {
+    const positionSet = new Set();
+    for (const destinations of destinationsGrouped) {
+        for (const destination of destinations) {
+            const hash = poshash(destination);
+            if (positionSet.has(hash)) {
+                return true;
+            }
+            positionSet.add(hash);
+        }
+    }
+    return false;
+}
+
 function waitPlySelection() {
     viewState = 'waitingPlySelection';
 
-    let overlap = false;
-    const destinationSet      = new Set()
-    const destinationsGrouped = [];
+    const plyIndexes          = plyIndexesGrouped.get(poshash(selectedSource));
+    const destinationsGrouped = plyIndexes.map(i => plyDestinations(currentPlies[i]));
 
-    const plyIndexes = plyIndexesGrouped.get(poshash(selectedSource));
-    for (const plyIndex of plyIndexes) {
-        const ply = currentPlies[plyIndex];
-        const plyDestinations = [];
-        for (const instruction of ply) {
-            if (instruction.type != 'move') {
-                continue;
-            }
-            const destination = {
-                row: instruction.drow,
-                col: instruction.dcol,
-            };
-            const hash = poshash(destination);
-            if (destinationSet.has(hash)) {
-                overlap = true;
-            }
-            destinationSet.add(hash);
-            plyDestinations.push(destination);
-        }
-        destinationsGrouped.push(plyDestinations);
-    }
+    console.log({destinationsGrouped});
+
+    scrollMode = hasOverlap(destinationsGrouped) || plyIndexes.length > PLIES_RGB.length;
 
     boardView.clearHighlight();
-    if (overlap || plyIndexes.length > PLIES_RGB.length) {
-        infoToast('TODO scroll mode');
+    if (scrollMode) {
+        scrollIndex = 0;
+        drawPlyScrollMode()
     } else {
         for (let i = 0; i < destinationsGrouped.length; i++) {
-            const plyDestinations = destinationsGrouped[i];
-            let rgb = PLIES_RGB[i];
-            for (const {row, col} of plyDestinations) {
-                boardView.highlight({row, col}, rgb)
-                rgb = darken(rgb);
-            }
+            const rgb = PLIES_RGB[i];
+            const destinations = destinationsGrouped[i];
+            drawDestinationSequence(rgb, destinations);
         }
+    }
+}
+
+function drawDestinationSequence(rgb, destinations) {
+    for (const {row, col} of destinations) {
+        boardView.highlight({row, col}, rgb)
+        rgb = darken(rgb);
     }
 }
 
@@ -216,13 +249,22 @@ function selectSource(row, col) {
 }
 
 function selectPly(row, col) {
-    let selectedPlyIndex = null;
     const plyIndexes = plyIndexesGrouped.get(poshash(selectedSource));
-    for (const plyIndex of plyIndexes) {
-        const ply = currentPlies[plyIndex];
+
+    let selectedPlyIndex = null;
+    if (scrollMode) {
+        const plyIndex = plyIndexes[scrollIndex];
+        const ply      = currentPlies[plyIndex];
         if (ply.some(ins => ins.type == 'move' && ins.drow == row && ins.dcol == col)) {
             selectedPlyIndex = plyIndex;
-            break;
+        }
+    } else {
+        for (const plyIndex of plyIndexes) {
+            const ply = currentPlies[plyIndex];
+            if (ply.some(ins => ins.type == 'move' && ins.drow == row && ins.dcol == col)) {
+                selectedPlyIndex = plyIndex;
+                break;
+            }
         }
     }
 
@@ -232,6 +274,13 @@ function selectPly(row, col) {
         client.doPly(selectedPlyIndex);
         waitOpponentPly();
     }
+}
+
+function drawPlyScrollMode() {
+    const plyIndexes   = plyIndexesGrouped.get(poshash(selectedSource));
+    const destinations = plyDestinations(currentPlies[plyIndexes[scrollIndex]]);
+    boardView.clearHighlight();
+    drawDestinationSequence(SCROLL_RGB, destinations);
 }
 
 function darken([r, g, b]) {

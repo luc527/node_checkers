@@ -88,7 +88,7 @@ app.get('/exit', (req, res) => {
 //
 
 app.post('/games/webhook', async (req, res) => {
-    // TODO: authorization (key informed in the webhook gui)
+    // TODO: authorization
     const {mode, id, result, timestamp} = req.body;
     if (!['human', 'machine'].includes(mode)) {
         res.status(406).send('Invalid mode');
@@ -147,7 +147,6 @@ app.get('/', async (req, res) => {
         }))),
     ]);
  
-    // TODO test merge
     const games = mergeBy(
         machineGames,
         humanGames,
@@ -368,9 +367,14 @@ app.post('/games/ai', async (req, res) => {
 });
 
 app.post('/games/human', async (req, res) => {
-    const {id, color, opponent, whiteToken, blackToken} = req.body;
-    const whiteId = color == 'white' ? req.user.id : opponent;
-    const blackId = color == 'black' ? req.user.id : opponent;
+    const {id, color, opponent, myToken, opponentToken} = req.body;
+    const amWhite = color == 'white';
+
+    const whiteToken = amWhite ? myToken : opponentToken;
+    const blackToken = amWhite ? opponentToken : myToken;
+    const whiteId    = amWhite ? req.user.id : opponent;
+    const blackId    = amWhite ? opponent : req.user.id;
+     
     try {
         await Games.saveHumanGame(id, whiteId, blackId, whiteToken, blackToken);
         res.status(201).send();
