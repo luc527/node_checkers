@@ -6,7 +6,7 @@ END $$;
 
 
 DO $$ BEGIN
-    CREATE TYPE end_result AS enum('playing', 'white won', 'black won', 'draw');
+    CREATE TYPE game_result AS enum('playing', 'white won', 'black won', 'draw');
 EXCEPTION
     WHEN duplicate_object THEN null;
 END $$;
@@ -39,14 +39,16 @@ create table if not exists friends_with (
 );
 
 create table if not exists machine_game (
-  player_id   bigint references player (id),
-  game_uuid uuid,
+  player_id     bigint references player (id),
+  game_uuid     uuid,
+  heuristic     text,
+  time_limit_ms int,
 
   player_color color,
 
   started_at timestamp not null default current_timestamp,
   ended_at   timestamp null,
-  end_result end_result,
+  game_result game_result default 'playing',
 
   primary key (player_id, game_uuid)
 );
@@ -56,9 +58,12 @@ create table if not exists human_game (
   black_id  bigint references player (id),
   game_uuid uuid,
 
+  white_token text not null,
+  black_token text not null,
+
   started_at timestamp not null default current_timestamp,
   ended_at   timestamp null,
-  end_result end_result,
+  game_result game_result default 'playing',
 
   primary key (white_id, black_id, game_uuid)
 );

@@ -107,6 +107,10 @@ class Client {
             if (this.verbose) console.log('websocket close', ev);
             if (ev.code != 1000 && ev.code != 1005) {
                 this.#reconnect();
+            } else {
+                for (const listener of this.listeners['terminated']) {
+                    listener();
+                }
             }
         };
     }

@@ -93,3 +93,9 @@ body {
     width: 60%;
     border-radius: var(--bs-border-radius);
 }
+
+a[disabled] {
+    color: gray;
+    pointer-events: none;
+    cursor: not-allowed;
+}

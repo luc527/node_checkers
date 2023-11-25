@@ -69,6 +69,10 @@ document.addEventListener('DOMContentLoaded', () => {
         errorToast(error.message);
     });
 
+    client.on('terminated', () => {
+        viewState = 'over';
+    });
+
     // TODO on <esc> undo ply selection
 
     boardView.onClick((row, col) => {
@@ -88,6 +92,12 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
+    document.addEventListener('keydown', ev => {
+        if (ev.key == 'Escape' && viewState == 'waitingPlySelection') {
+            waitSourceSelection();
+        }
+    });
+
     //
     // Create or connect to game
     //
@@ -102,6 +112,9 @@ document.addEventListener('DOMContentLoaded', () => {
         const id        = params.get('id');
         if (heuristic && timeLimit) {
             client.createMachineGame(color, heuristic, timeLimit);
+            client.on('mach/connected', message => {
+                saveCreatedMachineGame(message.id, message.yourColor, heuristic, timeLimit);
+            });
         } else if (id) {
             client.connectToMachineGame(id);
         } else {
@@ -116,7 +129,11 @@ document.addEventListener('DOMContentLoaded', () => {
         const token      = decodeURIComponent(params.get('token'));
 
         if (opponentId && color) {
-            client.on('human/created', message => sendPlayInvite(message, opponentId))
+            client.on('human/created', message => {
+                sendPlayInvite(message, opponentId);
+                const {myToken, opponentToken} = message;
+                saveCreatedHumanGame(message.id, message.yourColor, opponentId, myToken, opponentToken)
+            });
             client.createHumanGame(color);
         } else if (gameId && token) {
             client.connectToHumanGame(gameId, token);
@@ -219,18 +236,47 @@ function selectPly(row, col) {
 
 function darken([r, g, b]) {
     return [
-        Math.max(0, r-30),
-        Math.max(0, g-30),
-        Math.max(0, b-30),
+        Math.max(0, r-45),
+        Math.max(0, g-45),
+        Math.max(0, b-45),
     ]
 }
 
 async function sendPlayInvite(createdMessage, opponentId) {
     const {id, opponentToken: token} = createdMessage;
-    const {ok} = await request('POST', `/users/${opponentId}/gameInvites`, { id, token });
+    const {ok, body} = await request('POST', `/users/${opponentId}/gameInvites`, { id, token });
     if (!ok) {
-        errorToast('Failed to invite opponent');
+        errorToast('Failed to invite opponent: ', body.message);
     } else {
         console.info('Opponent invited successfully');
+    }
+}
+
+async function saveCreatedMachineGame(gameId, color, heuristic, timeLimit) {
+    const {ok, body} = await request('POST', `/games/ai/`, {
+        id: gameId,
+        color,
+        heuristic,
+        timeLimit,
+    });
+    if (!ok) {
+        errorToast('Failed to save created machine game: ', body.message);
+    } else {
+        console.info('Machine game saved successfully');
+    }
+}
+
+async function saveCreatedHumanGame(gameId, myColor, opponentId, myToken, opponentToken) {
+    const {ok, body} = await request('POST', `/games/human/`, {
+        id: gameId,
+        color: myColor,
+        opponent: opponentId,
+        myToken,
+        opponentToken,
+    });
+    if (!ok) {
+        errorToast('Failed to save created machine game: ', body.message);
+    } else {
+        console.info('Machine game saved successfully');
     }
 }

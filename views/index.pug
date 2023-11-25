@@ -1,4 +1,29 @@
 extends page.pug
 
 block pageBody
-  | Hello world (TODO improve this page? maybe just redirect?)
+  if games.length == 0
+    div.alert.alert-info You haven't played any games yet.
+  else
+    table.table.table-hover.table-striped
+      caption Recent games
+      thead
+        tr
+          th Mode
+          th Started
+          th Ended
+          th Status
+          th Info
+          th Link
+      tbody
+        each game in games
+          tr
+            td= game.mode
+            td= game.startedAt.toLocaleString('pt-BR')
+            td= game.endedAt ? game.endedAt.toLocaleString('pt-BR') : ''
+            td= game.result
+            td= game.info
+            td
+              a(href=game.link, target="_top", disabled=game.endedAt != null).btn.btn-link
+                i.bi.bi-box-arrow-up-right
+  script(type="text/javascript").
+    console.log(!{JSON.stringify(games)})

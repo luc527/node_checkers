@@ -7,8 +7,10 @@ import 'dotenv/config'
 
 import * as Users from './users.js';
 import * as Friends from './friends.js';
+import * as Games from './games.js';
 import NotificationQueues from './notificationQueues.js';
 import * as jwt from './jwt.js'
+import {mergeBy} from './util.js'
 
 const notificationQueues = new NotificationQueues();
 
@@ -82,6 +84,31 @@ app.get('/exit', (req, res) => {
 });
 
 //
+// Webhook
+//
+
+app.post('/games/webhook', async (req, res) => {
+    // TODO: authorization (key informed in the webhook gui)
+    const {mode, id, result, timestamp} = req.body;
+    if (!['human', 'machine'].includes(mode)) {
+        res.status(406).send('Invalid mode');
+        return;
+    }
+    if (!['playing', 'white won', 'black won', 'draw'].includes(result)) {
+        res.status(406).send('Invalid result');
+        return;
+    }
+    const date = new Date(timestamp);
+    try {
+        await Games.updateGame(mode, id, result, date);
+        res.status(200).end();
+    } catch (error) {
+        console.error('webhook failed:', error);
+        res.status(500).send('Failed to update game status');
+    }
+});
+
+//
 // Endpoints below need authorization
 //
 
@@ -90,7 +117,6 @@ app.use((req, res, next) => {
         next();
     } else {
         res.status(403);
-        // TODO test
         if (req.is('json')) {
             res.json({message: 'Unauthorized'});
         } else {
@@ -99,8 +125,41 @@ app.use((req, res, next) => {
     }
 });
 
-app.get('/', (req, res) => {
-    res.render('index', {title: 'Home'});
+app.get('/', async (req, res) => {
+    const [machineGames, humanGames] = await Promise.all([
+        Games.findMachineGames(req.user.id, 1, 10).then(games => games.map(game => ({
+            mode: 'ai',
+            id: game.game_uuid,
+            startedAt: new Date(game.started_at),
+            endedAt: game.ended_at ? new Date(game.ended_at) : null,
+            result: game.game_result,
+            link: `/play?mode=ai&id=${game.game_uuid}`,
+            info: `Heuristic: ${game.heuristic}, time limit: ${game.time_limit_ms/1000}s`
+        }))),
+        Games.findHumanGames(req.user.id, 1, 10).then(games => games.map(game => ({
+            mode: 'human',
+            id: game.game_uuid,
+            startedAt: new Date(game.started_at),
+            endedAt: game.ended_at ? new Date(game.endede_at) : null,
+            result: game.game_result,
+            info: `Against ${req.user.id == game.white_id ? game.black_name : game.white_name}`,
+            link: `play?mode=human&id=${game.game_uuid}&token=${req.user.id == game.white_id ? game.white_token : game.black_token}`
+        }))),
+    ]);
+ 
+    // TODO test merge
+    const games = mergeBy(
+        machineGames,
+        humanGames,
+        (a, b) => a.startedAt < b.startedAt,
+    ).slice(0, 10);
+
+    console.log({games})
+
+    res.render('index', {
+        title: 'Home',
+        games,
+    });
 });
 
 app.get('/users', async (req, res) => {
@@ -295,6 +354,30 @@ app.get('/play/human', (req, res) => {
 app.get('/play', (req, res) => {
     res.header('Cache-Control', 'no-cache');
     res.render('play', {title: 'Play against an AI'});
+});
+
+app.post('/games/ai', async (req, res) => {
+    const {id, color, heuristic, timeLimit} = req.body;
+    try {
+        await Games.saveMachineGame(id, req.user.id, color, heuristic, timeLimit);
+        res.status(201).send();
+    } catch (error) {
+        console.error(error);
+        res.status(400).json({message: error.toString()});
+    }
+});
+
+app.post('/games/human', async (req, res) => {
+    const {id, color, opponent, whiteToken, blackToken} = req.body;
+    const whiteId = color == 'white' ? req.user.id : opponent;
+    const blackId = color == 'black' ? req.user.id : opponent;
+    try {
+        await Games.saveHumanGame(id, whiteId, blackId, whiteToken, blackToken);
+        res.status(201).send();
+    } catch (error) {
+        console.error(error);
+        res.status(400).json({message: error.toString()});
+    }
 });
 
 //
