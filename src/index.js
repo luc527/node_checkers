@@ -150,10 +150,8 @@ app.get('/', async (req, res) => {
     const games = mergeBy(
         machineGames,
         humanGames,
-        (a, b) => a.startedAt < b.startedAt,
+        (a, b) => a.startedAt > b.startedAt,
     ).slice(0, 10);
-
-    console.log({games})
 
     res.render('index', {
         title: 'Home',
