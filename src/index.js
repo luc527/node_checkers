@@ -11,10 +11,15 @@ import * as Games from './games.js';
 import NotificationQueues from './notificationQueues.js';
 import * as jwt from './jwt.js'
 import {mergeBy} from './util.js'
+import { fetchGameHistory } from './wsIntegration.js';
 
 const notificationQueues = new NotificationQueues();
 
 const app = express();
+
+// TODO instead of doing if errorMessage on the template
+// make a separate template that contains just an error message
+// and render it conditionally
 
 app.use(morgan('dev'));
 app.use('/static', express.static('static'));
@@ -31,6 +36,7 @@ app.use(async (req, res, next) => {
         try {
             const {id, name} = await jwt.verify(token, process.env.JWT_SECRET);
             req.user = {id, name};
+            res.locals.loggedUserId = name;
             res.locals.loggedUserName = name;  // for use in templates
         } catch (ignored) {}
     }
@@ -348,7 +354,41 @@ app.get('/play/human', (req, res) => {
 
 app.get('/play', (req, res) => {
     res.header('Cache-Control', 'no-cache');
-    res.render('play', {title: 'Play against an AI'});
+    res.render('play', {title: 'Play'});
+});
+
+app.get('/games/ai/:uuid', async (req, res) => {
+    const uuid = req.params.uuid;
+    const game = await Games.findMachineGame(uuid);
+    if (game == null) {
+        // TODO render error template
+        res.status(400).end();
+        return;
+    }
+    const history = await fetchGameHistory('machine', uuid);
+    res.render('game-history', {
+        title: 'Game history',
+        mode: 'ai',
+        game,
+        history,
+    });
+});
+
+app.get('/games/human/:uuid', async (req, res) => {
+    const uuid = req.params.uuid;
+    const game = await Games.findHumanGame(uuid);
+    if (game == null) {
+        // TODO render error template
+        res.status(400).end();
+        return;
+    }
+    const history = await fetchGameHistory('human', uuid);
+    res.render('game-history', {
+        title: 'Game history',
+        mode: 'human',
+        game,
+        history,
+    });
 });
 
 app.get('/games/ai', async (req, res) => {

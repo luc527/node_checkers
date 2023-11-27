@@ -93,3 +93,40 @@ export function updateGame(mode, gameId, result, date) {
             game_result: result,
         });
 }
+
+export async function findMachineGame(uuid) {
+    const knex = connect();
+    const rows = await knex('machine_game')
+        .where('game_uuid', uuid)
+        .select(
+            'game_uuid',
+            'started_at',
+            'ended_at',
+            'game_result',
+            'player_color',
+            'heuristic',
+            'time_limit_ms',
+        );
+    return rows.length == 1 ? rows[0] : null;
+}
+
+export async function findHumanGame(uuid) {
+    const knex = connect();
+    const rows = await knex({hg: 'human_game'})
+        .join({wu: 'player'}, 'wu.id', 'hg.white_id')
+        .join({bu: 'player'}, 'bu.id', 'hg.black_id')
+        .where('hg.game_uuid', uuid)
+        .select(
+            'hg.game_uuid',
+            'hg.game_result',
+            'hg.started_at',
+            'hg.ended_at',
+            'hg.white_token',
+            'hg.black_token',
+            'hg.white_id',
+            'hg.black_id',
+            'wu.name as white_name',
+            'bu.name as black_name',
+        );
+    return rows.length == 1 ? rows[0] : null;
+}

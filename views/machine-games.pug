@@ -23,7 +23,7 @@ block pageBody
           td= game.heuristic
           td= game.timeLimit
           td
-            a(href=`/games/machine/${game.id}`, target='_blank').btn.btn-link
+            a(href=`/games/ai/${game.id}`, target='_blank').btn.btn-link
               i.bi.bi-box-arrow-up-right
 
   +pagination('/games/ai', [], page, games.length, perPage)

@@ -1,0 +1,36 @@
+extends page.pug
+
+mixin field(lab, val)
+  div.flex-fill
+    label.form-label= lab
+    input.form-control(
+      readonly,
+      disabled,
+      value=val,
+      type='text'
+    )
+
+block pageBody
+  div.vstack.gap-3
+    div.hstack.gap-3
+      +field('ID', game.game_uuid)
+      +field('Started at', new Date(game.started_at).toLocaleString('pt-BR'))
+      +field('Ended at', new Date(game.ended_at).toLocaleString('pt-BR'))
+    div.hstack.gap-3
+      +field('Result', game.game_result)
+      if mode == 'ai'
+        +field('Your color', game.player_color)
+        +field('Heuristic', game.heuristic)
+        +field('Time limit', `${game.time_limit_ms/1000}s`)
+      else if mode == 'human'
+        +field('Your color', game.white_id == loggedUserId ? 'white' : 'black')
+        +field('Against', game.white_id == loggedUserId ? game.black_name : game.white_name)
+
+  div#states-container
+
+block pageScripts
+  script(type='text/javascript').
+    const rawPlyHistory = !{JSON.stringify(history)};
+  script(src='/static/js/game/util.js')
+  script(src='/static/js/game/BoardView.js')
+  script(src='/static/js/views/game-history.js')
