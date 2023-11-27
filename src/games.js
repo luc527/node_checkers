@@ -22,8 +22,7 @@ export async function saveHumanGame(gameId, whiteId, blackId, whiteToken, blackT
     });
 }
 
-export function findMachineGames(userId, page=1, perPage=15) {
-    const knex = connect();
+function machineGamesQuery(knex, userId, page=1, perPage=15) {
     return knex('machine_game')
         .where('player_id', userId)
         .select(
@@ -40,8 +39,18 @@ export function findMachineGames(userId, page=1, perPage=15) {
         .orderBy('started_at', 'desc');
 }
 
-export function findHumanGames(userId, page=1, perPage=15) {
+export function findMachineGames(userId, page=1, perPage=15) {
     const knex = connect();
+    return machineGamesQuery(knex, userId, page, perPage);
+}
+
+export function findEndedMachineGames(userId, page=1, perPage=15) {
+    const knex = connect();
+    const query = machineGamesQuery(knex, userId, page, perPage);
+    return query.where('game_result', '!=', 'playing');
+}
+
+function humanGamesQuery(knex, userId, page, perPage) {
     return knex({hg: 'human_game'})
         .join({wu: 'player'}, 'wu.id', 'hg.white_id')
         .join({bu: 'player'}, 'bu.id', 'hg.black_id')
@@ -61,6 +70,17 @@ export function findHumanGames(userId, page=1, perPage=15) {
         .limit(perPage)
         .offset((page - 1) * perPage)
         .orderBy('hg.started_at', 'desc');
+}
+
+export function findHumanGames(userId, page=1, perPage=15) {
+    const knex = connect();
+    return humanGamesQuery(knex, userId, page, perPage)
+}
+
+export function findEndedHumanGames(userId, page=1, perPage=15) {
+    const knex = connect();
+    const query = humanGamesQuery(knex, userId, page, perPage);
+    return query.where('hg.game_result', '!=', 'playing');
 }
 
 export function updateGame(mode, gameId, result, date) {

@@ -12,7 +12,7 @@ const SCROLL_RGB = [255, 0, 255];  //magenta
 // FIXME sending ply might fail, but we go to the 'waitingOpponentPly' state anyways
 
 let boardView;
-let viewState;
+let viewState = 'connecting';
 let client;
 let selectedSource;
 
@@ -80,6 +80,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     boardView.onClick((row, col) => {
         switch (viewState) {
+        case 'connecting':
         case 'waitingOpponentPly':
         case 'over':
             // Do nothing

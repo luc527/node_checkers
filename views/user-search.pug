@@ -44,6 +44,6 @@ block pageBody
                   button(disabled=disabled, data-id=user.id).btn-send-request.btn.btn-success
                     i.bi.bi-person-plus-fill
 
-    +pagination('/users', [`search=${search}`], page, showPrev, showNext)
+    +pagination('/users', [`search=${search}`], page, users.length, perPage)
 
   script(src="/static/js/views/user-search.js")

@@ -1,4 +1,7 @@
-mixin pagination(path, get, page, showPrev, showNext)
+mixin pagination(path, get, page, numItems, perPage)
+  -
+    const showPrev = page > 1
+    const showNext = numItems == perPage
   if showPrev || showNext
     -
       const getPrev = [...get, `page=${Number(page) - 1}`];

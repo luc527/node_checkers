@@ -182,8 +182,7 @@ app.get('/users', async (req, res) => {
         errorMessage,
         search,
         page,
-        showPrev: users && page > 1,
-        showNext: users && users.length == perPage,
+        perPage,
     };
     res.render('user-search', options);
 });
@@ -314,8 +313,7 @@ app.get('/friends', async (req, res) => {
         errorMessage,
         friends,
         page,
-        showPrev: friends && page > 1,
-        showNext: friends && friends.length == perPage,
+        perPage,
     });
 });
 
@@ -351,6 +349,56 @@ app.get('/play/human', (req, res) => {
 app.get('/play', (req, res) => {
     res.header('Cache-Control', 'no-cache');
     res.render('play', {title: 'Play against an AI'});
+});
+
+app.get('/games/ai', async (req, res) => {
+    const page    = Number(req.query.page || '1');
+    const perPage = 15;
+    const games = [];
+    for (const game of await Games.findEndedMachineGames(req.user.id, page, perPage)) {
+        games.push({
+            id: game.game_uuid,
+            startedAt: new Date(game.started_at),
+            endedAt: new Date(game.ended_at),
+            result: game.game_result,
+            yourColor: game.player_color,
+            heuristic: game.heuristic,
+            timeLimit: (game.time_limit_ms / 1000) + 's',
+        });
+    }
+    const options = {
+        title: 'Previous games',
+        games,
+        page,
+        perPage,
+    };
+    res.render('machine-games', options);
+});
+
+app.get('/games/human', async (req, res) => {
+    const page    = Number(req.query.page || '1');
+    const perPage = 15;
+    const games = [];
+    for (const game of await Games.findEndedHumanGames(req.user.id, page, perPage)) {
+        const userWhite = game.white_id == req.user.id;
+        const userColor = userWhite ? 'white' : 'black';
+        const opponentName = userWhite ? game.black_name : game.white_name;
+        games.push({
+            id: game.game_uuid,
+            startedAt: new Date(game.started_at),
+            endedAt: new Date(game.ended_at),
+            result: game.game_result,
+            yourColor: userColor,
+            opponentName,
+        });
+    }
+    const options = {
+        title: 'Previous games',
+        games,
+        page,
+        perPage,
+    };
+    res.render('human-games', options);
 });
 
 app.post('/games/ai', async (req, res) => {

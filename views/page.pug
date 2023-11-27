@@ -24,6 +24,13 @@ block layoutNav
                 a.dropdown-item(href="/play/ai") Against an AI
               li
                 a.dropdown-item(href="/play/human") Against a human
+          li.nav-item.dropdown
+            a.nav-link.dropdown-toggle(href="#", data-bs-toggle="dropdown") History
+            ul.dropdown-menu
+              li
+                a.dropdown-item(href="/games/ai") Against an AI
+              li
+                a.dropdown-item(href="/games/human") Against a human
           li.nav-item.dropdown.ms-auto
             a.nav-link.dropdown-toggle(href="#", data-bs-toggle="dropdown")
               | #[i.bi.bi-person] #{span=loggedUserName}
@@ -32,7 +39,7 @@ block layoutNav
                 a.dropdown-item(href="/exit") Exit
 
 block layoutBody
-  div.card.mt-3
+  div.card.mt-3.mb-5
     div.card-body
       h4= title
       hr

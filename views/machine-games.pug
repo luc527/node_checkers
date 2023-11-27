@@ -1,0 +1,29 @@
+extends page
+include mixins/pagination.pug
+
+block pageBody
+
+  table.table.table-hover.table-striped
+    thead
+      tr
+        th Started at
+        th Ended at
+        th Result
+        th Your color
+        th Heuristic
+        th Time limit
+        th View
+    tbody
+      each game in games
+        tr
+          td= game.startedAt.toLocaleString('pt-BR')
+          td= game.endedAt.toLocaleString('pt-BR')
+          td= game.result
+          td= game.yourColor
+          td= game.heuristic
+          td= game.timeLimit
+          td
+            a(href=`/games/machine/${game.id}`, target='_blank').btn.btn-link
+              i.bi.bi-box-arrow-up-right
+
+  +pagination('/games/ai', [], page, games.length, perPage)

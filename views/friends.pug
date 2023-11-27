@@ -32,7 +32,7 @@ block pageBody
                 )
                   i.bi.bi-person-x-fill
 
-    +pagination('/friends', [], page, showPrev, showNext)
+    +pagination('/friends', [], page, friends.length, perPage)
 
   script(src="/static/js/views/friends.js")
 
