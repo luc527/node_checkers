@@ -13,9 +13,6 @@ document.addEventListener('DOMContentLoaded', () => {
         const boardView = new BoardView(canvas);
         boardView.draw(state.pieces);
 
-        // TODO highlight ply in *previous* state
-        // easier to see what's going on
-
         if (state.plyDone) {
             const moves = state.plyDone.filter(ins => ins.type == 'move');
             const toHighlight = [

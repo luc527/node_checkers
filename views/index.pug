@@ -23,7 +23,15 @@ block pageBody
             td= game.result
             td= game.info
             td
-              a(href=game.link, target="_top", disabled=game.endedAt != null).btn.btn-link
-                i.bi.bi-box-arrow-up-right
+              if game.endedAt
+                a(href=game.viewLink, target="_blank").btn.btn-link
+                  i.bi.bi-box-arrow-up-right
+                  | 
+                  | View
+              else
+                a(href=game.playLink, target="_blank").btn.btn-link
+                  i.bi.bi-box-arrow-up-right
+                  | 
+                  | Play
   script(type="text/javascript").
     console.log(!{JSON.stringify(games)})

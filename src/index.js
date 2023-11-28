@@ -139,7 +139,8 @@ app.get('/', async (req, res) => {
             startedAt: new Date(game.started_at),
             endedAt: game.ended_at ? new Date(game.ended_at) : null,
             result: game.game_result,
-            link: `/play?mode=ai&id=${game.game_uuid}`,
+            playLink: `/play?mode=ai&id=${game.game_uuid}`,
+            viewLink: `/games/ai/${game.game_uuid}`,
             info: `Heuristic: ${game.heuristic}, time limit: ${game.time_limit_ms/1000}s`
         }))),
         Games.findHumanGames(req.user.id, 1, 10).then(games => games.map(game => ({
@@ -149,7 +150,8 @@ app.get('/', async (req, res) => {
             endedAt: game.ended_at ? new Date(game.endede_at) : null,
             result: game.game_result,
             info: `Against ${req.user.id == game.white_id ? game.black_name : game.white_name}`,
-            link: `play?mode=human&id=${game.game_uuid}&token=${req.user.id == game.white_id ? game.white_token : game.black_token}`
+            playLink: `play?mode=human&id=${game.game_uuid}&token=${req.user.id == game.white_id ? game.white_token : game.black_token}`,
+            viewLink: `/games/human/${game.game_uuid}`,
         }))),
     ]);
  
