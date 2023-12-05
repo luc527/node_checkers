@@ -26,7 +26,12 @@ block pageBody
         +field('Your color', game.white_id == loggedUserId ? 'white' : 'black')
         +field('Against', game.white_id == loggedUserId ? game.black_name : game.white_name)
 
-  div#states-container
+  template#state-template
+    div.state-item.d-flex.flex-row.align-items-start.gap-3.w-50.p-3
+      canvas.w-50
+      div.ply-description.w-50
+
+  div#states-container.mt-3.d-flex.flex-row.flex-wrap.m-auto
 
 block pageScripts
   script(type='text/javascript').

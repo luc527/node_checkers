@@ -130,3 +130,63 @@ export async function findHumanGame(uuid) {
         );
     return rows.length == 1 ? rows[0] : null;
 }
+
+export async function getMachineStatistics(userId) {
+    const knex = connect();
+    const result = await knex.raw(`
+        with rel as (
+          select heuristic
+               , time_limit_ms
+               , ended_at
+               , case game_result
+                 when 'draw' then 'draw'
+                 when 'white won' then
+                   case player_color when 'white' then 'winner' else 'loser' end
+                 when 'black won' then
+                   case player_color when 'white' then 'loser' else 'winner' end
+                end as result
+           from machine_game
+          where game_result != 'playing'
+            and player_id = ?
+        )
+        select sum(case result when 'draw' then 1 else 0 end)   as draws
+             , sum(case result when 'winner' then 1 else 0 end) as wins
+             , sum(case result when 'loser' then 1 else 0 end)  as losses
+          from rel;
+    `, [userId]);
+    const row = result.rows[0];
+    return {
+        wins: Number(row.wins),
+        losses: Number(row.losses),
+        draws: Number(row.draws),
+    };
+}
+
+export async function getHumanStatistics(userId) {
+    const knex = connect();
+    const result = await knex.raw(`
+        with rel as (
+          select case :id::BIGINT when white_id then black_id else white_id end as opponent_id
+               , ended_at
+               , case game_result
+                 when 'draw' then 'draw'
+                 when 'white won' then
+                     case :id::BIGINT when white_id then 'winner' else 'loser' end
+                 when 'black won' then
+                     case :id::BIGINT when white_id then 'loser' else 'winner' end
+                 end as result
+            from human_game
+           where game_result != 'playing'
+        )
+        select sum(case result when 'draw'   then 1 else 0 end) as draws
+             , sum(case result when 'winner' then 1 else 0 end) as wins
+             , sum(case result when 'loser'  then 1 else 0 end) as losses
+          from rel;
+    `, {id: Number(userId)});
+    const row = result.rows[0];
+    return {
+        wins: Number(row.wins),
+        losses: Number(row.losses),
+        draws: Number(row.draws),
+    };
+}

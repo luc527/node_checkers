@@ -99,3 +99,20 @@ a[disabled] {
     pointer-events: none;
     cursor: not-allowed;
 }
+
+.state-item:nth-child(odd) {
+    border-left: 1px var(--bs-border-color) solid;
+    border-right: 1px var(--bs-border-color) solid;
+}
+
+.state-item:nth-child(even) {
+    border-right: 1px var(--bs-border-color) solid;
+}
+
+.state-item:nth-child(1), .state-item:nth-child(2) {
+    border-top: 1px var(--bs-border-color) solid;
+}
+
+.state-item {
+    border-bottom: 1px var(--bs-border-color) solid;
+}

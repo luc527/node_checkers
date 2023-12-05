@@ -1,0 +1,28 @@
+extends page.pug
+
+mixin cell(amount, percentage)
+  div.d-flex.flex-column.align-items-center
+    span.fs-5= `${Math.round(percentage * 100)}%`
+    span= amount
+
+block pageBody
+  table.table.table-hover
+    thead
+      tr
+        th Mode
+        th.text-center Wins
+        th.text-center Losses
+        th.text-center Draws
+        th.text-center Total
+    tbody
+      each stat in statsGrouped
+        tr
+          td= stat.title
+          td.text-success
+            +cell(stat.wins, stat.winPercentage)
+          td.text-danger
+            +cell(stat.losses, stat.lossPercentage)
+          td.text-secondary
+            +cell(stat.draws, stat.drawPercentage)
+          td
+            +cell(stat.total, stat.percentage)

@@ -133,7 +133,7 @@ app.use((req, res, next) => {
 
 app.get('/', async (req, res) => {
     const [machineGames, humanGames] = await Promise.all([
-        Games.findMachineGames(req.user.id, 1, 10).then(games => games.map(game => ({
+        Games.findMachineGames(req.user.id, 1, 5).then(games => games.map(game => ({
             mode: 'ai',
             id: game.game_uuid,
             startedAt: new Date(game.started_at),
@@ -143,7 +143,7 @@ app.get('/', async (req, res) => {
             viewLink: `/games/ai/${game.game_uuid}`,
             info: `Heuristic: ${game.heuristic}, time limit: ${game.time_limit_ms/1000}s`
         }))),
-        Games.findHumanGames(req.user.id, 1, 10).then(games => games.map(game => ({
+        Games.findHumanGames(req.user.id, 1, 5).then(games => games.map(game => ({
             mode: 'human',
             id: game.game_uuid,
             startedAt: new Date(game.started_at),
@@ -159,7 +159,7 @@ app.get('/', async (req, res) => {
         machineGames,
         humanGames,
         (a, b) => a.startedAt > b.startedAt,
-    ).slice(0, 10);
+    ).slice(0, 5);
 
     res.render('index', {
         title: 'Home',
@@ -470,6 +470,44 @@ app.post('/games/human', async (req, res) => {
         console.error(error);
         res.status(400).json({message: error.toString()});
     }
+});
+
+app.get('/stats', async (req, res) => {
+    const [machineStats, humanStats] = await Promise.all([
+        Games.getMachineStatistics(req.user.id),
+        Games.getHumanStatistics(req.user.id),
+    ]);
+    const statsGrouped = {
+        'machine': {
+            title: 'Against an AI',
+            ...machineStats
+        },
+        'human': {
+            title: 'Against a human',
+            ...humanStats
+        },
+        'total': {
+            title: 'Total',
+            wins:   machineStats.wins   + humanStats.wins,
+            losses: machineStats.losses + humanStats.losses,
+            draws:  machineStats.draws  + humanStats.draws,
+        }
+    };
+    for (const group in statsGrouped) {
+        const stats = statsGrouped[group];
+        const total = stats.wins + stats.losses + stats.draws;
+        stats.total = total;
+        stats.winPercentage  = stats.wins   / total;
+        stats.lossPercentage = stats.losses / total;
+        stats.drawPercentage = stats.draws  / total;
+    }
+    for (const group of ['machine', 'human', 'total']) {
+        statsGrouped[group].percentage = statsGrouped[group].total / statsGrouped.total.total;
+    }
+    res.render('stats', {
+        title: 'Statistics',
+        statsGrouped,
+    });
 });
 
 //
