@@ -19,7 +19,6 @@ jobs:
 
       - name: Build Docker image
         run: echo 'Building image luc527/ese_web_checkers'
-          - echo 'Pushing image to Docker Hub'
 
       - name: Push Docker image to Docker hub
         run: echo 'Pushing image to Docker Hub'
