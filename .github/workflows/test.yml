@@ -1,0 +1,27 @@
+name: 'Push to testing environment'
+
+on:
+  push:
+    branches:
+      - development
+
+jobs:
+
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Docker Hub login, build and push image
+        run:
+          - echo 'Logging into Docker Hub'
+          - echo 'Building image luc527/ese_web_checkers'
+          - echo 'Pushing image to Docker Hub'
+
+      - name: Deploy to QA environment
+        run:
+          - echo 'Running docker compose on remote QA host'
+          - cat compose/qa/docker-compose.yml
+
