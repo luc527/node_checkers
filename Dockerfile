@@ -4,7 +4,8 @@ WORKDIR /usr/src/app
 
 COPY package*.json ./
 
-RUN npm ci
+RUN npm i --package-lock-only && \
+    npm ci
 
 COPY . .
 

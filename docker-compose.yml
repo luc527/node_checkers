@@ -12,6 +12,8 @@ services:
     command: npm run start
     volumes:
       - .:/usr/src/app
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
 
   pg:
     image: postgres:16.0-alpine3.18
@@ -38,6 +40,8 @@ services:
       - PGADMIN_DEFAULT_PASSWORD=${PGADMIN_PASS}
     depends_on:
       - pg
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
 
   ws:
     build:
@@ -47,8 +51,10 @@ services:
     ports:
       - ${WS_PORT:-88}:88
     volumes:
-      - ../ws_checkers/checkers.db:/go/bin/checkers.db
+      - ./data/ws_checkers:/go/bin/data
     environment:
-      DB_PATH: "/go/bin/checkers.db"
+      DB_PATH: "/go/bin/data/checkers.db"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
 
 
